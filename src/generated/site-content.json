@@ -1,0 +1,184 @@
+{
+  "siteSettings": {
+    "announcement": {
+      "desktopText": "Free shipping on orders above ₹499 — Easy 15-day returns",
+      "mobileText": "Free shipping above ₹499 — Easy returns"
+    },
+    "headerLinks": [
+      { "label": "Shop", "url": "/products" },
+      { "label": "New arrivals", "url": "/products?sort=newest" },
+      { "label": "Track order", "url": "/orders" }
+    ],
+    "footerEyebrow": "Stay in style",
+    "footerHeadline": "Fashion that moves with you.",
+    "footerDescription": "Trending styles delivered to your door with easy returns and secure checkout.",
+    "footerShortCopy": "Indian fashion label delivering curated style across the country.",
+    "footerSections": [
+      {
+        "title": "Shop",
+        "links": [
+          { "label": "All products", "url": "/products" },
+          { "label": "New arrivals", "url": "/products?sort=newest" }
+        ]
+      },
+      {
+        "title": "Support",
+        "links": [
+          { "label": "Track order", "url": "/orders" },
+          { "label": "Shipping & returns", "url": "/shipping-returns" },
+          { "label": "Contact us", "url": "/contact" }
+        ]
+      },
+      {
+        "title": "Company",
+        "links": [
+          { "label": "About", "url": "/about" },
+          { "label": "Privacy policy", "url": "/privacy" },
+          { "label": "Terms of service", "url": "/terms" }
+        ]
+      }
+    ],
+    "socialLinks": [
+      { "label": "Instagram", "url": "https://instagram.com/kashmirijewels" }
+    ],
+    "benefits": [
+      { "icon": "truck", "title": "Free shipping", "copy": "Free shipping on all orders above ₹499." },
+      { "icon": "returns", "title": "Easy returns", "copy": "Easy 15-day return policy. No questions asked." },
+      { "icon": "shield", "title": "Secure checkout", "copy": "Protected by Razorpay. Your data stays safe." },
+      { "icon": "bag", "title": "Curated styles", "copy": "Handpicked fashion that fits your vibe." }
+    ],
+    "copyrightLine": "Kashmiri Jewels. All rights reserved.",
+    "bottomNote": "Prices are in Indian Rupees (₹)."
+  },
+  "homePage": {
+    "seo": {
+      "title": "Kashmiri Jewels — Indian Fashion Label",
+      "description": "Discover curated Indian fashion at Kashmiri Jewels. Trendy styles, easy returns, and free shipping above ₹499.",
+      "image": {
+        "url": "/banners/40.jpg",
+        "alt": "Kashmiri Jewels fashion"
+      }
+    },
+    "hero": {
+      "screenReaderTitle": "Kashmiri Jewels — latest collection",
+      "slides": [
+        {
+          "url": "/banners/40.jpg",
+          "alt": "Kashmiri Jewels collection — style 1"
+        },
+        {
+          "url": "/banners/37.jpg",
+          "alt": "Kashmiri Jewels collection — style 2"
+        }
+      ],
+      "primaryCta": {
+        "label": "Shop now",
+        "url": "/products"
+      },
+      "styleFinderLabel": "Find your style"
+    },
+    "categorySection": {
+      "eyebrow": "Categories",
+      "heading": "Shop by category",
+      "link": { "label": "View all", "url": "/products" }
+    },
+    "bestSellersSection": {
+      "eyebrow": "Best sellers",
+      "heading": "Most loved styles",
+      "link": { "label": "View all", "url": "/products" }
+    },
+    "imageStory": {
+      "eyebrow": "The look",
+      "heading": "Style inspiration",
+      "copy": "Explore curated looks and find your perfect fit.",
+      "link": { "label": "Explore", "url": "/products" }
+    },
+    "newArrivalsSection": {
+      "eyebrow": "New in",
+      "heading": "Just dropped",
+      "link": { "label": "View all", "url": "/products?sort=newest" }
+    }
+  },
+  "staticPages": [
+    {
+      "slug": "about",
+      "eyebrow": "About us",
+      "title": "About Kashmiri Jewels",
+      "seoTitle": "About Kashmiri Jewels — Indian Fashion Label",
+      "seoDescription": "Learn about Kashmiri Jewels, the Indian fashion label bringing you curated styles.",
+      "body": [
+        {
+          "_type": "block",
+          "style": "normal",
+          "children": [
+            { "_type": "span", "text": "Kashmiri Jewels is an Indian fashion label bringing curated styles to your doorstep. We believe fashion is a form of self-expression, and our collections are designed to help you find your unique voice." }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "contact",
+      "eyebrow": "Contact",
+      "title": "Contact us",
+      "seoTitle": "Contact Kashmiri Jewels",
+      "seoDescription": "Get in touch with the Kashmiri Jewels team.",
+      "body": [
+        {
+          "_type": "block",
+          "style": "normal",
+          "children": [
+            { "_type": "span", "text": "Reach out to us at hello.kashmirijewels@gmail.com for any questions, concerns, or feedback. We would love to hear from you." }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "privacy",
+      "eyebrow": "Privacy",
+      "title": "Privacy policy",
+      "seoTitle": "Privacy policy — Kashmiri Jewels",
+      "seoDescription": "Kashmiri Jewels privacy policy.",
+      "body": [
+        {
+          "_type": "block",
+          "style": "normal",
+          "children": [
+            { "_type": "span", "text": "Your privacy matters to us. We collect only the information necessary to process your orders and improve your shopping experience. We do not share your personal data with third parties except as required for payment processing and shipping." }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "shipping-returns",
+      "eyebrow": "Shipping & returns",
+      "title": "Shipping and returns",
+      "seoTitle": "Shipping and returns — Kashmiri Jewels",
+      "seoDescription": "Kashmiri Jewels shipping and return policy.",
+      "body": [
+        {
+          "_type": "block",
+          "style": "normal",
+          "children": [
+            { "_type": "span", "text": "We offer free shipping on all orders above ₹499. Standard shipping is ₹100. We offer a 15-day easy return policy. Items must be unworn with tags attached. Refunds are processed within 5-7 business days after we receive the return." }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "terms",
+      "eyebrow": "Terms",
+      "title": "Terms of service",
+      "seoTitle": "Terms of service — Kashmiri Jewels",
+      "seoDescription": "Kashmiri Jewels terms of service.",
+      "body": [
+        {
+          "_type": "block",
+          "style": "normal",
+          "children": [
+            { "_type": "span", "text": "By using Kashmiri Jewels, you agree to these terms. All products are subject to availability. We reserve the right to cancel orders in case of stock unavailability or pricing errors. Prices are in Indian Rupees and include applicable taxes." }
+          ]
+        }
+      ]
+    }
+  ]
+}

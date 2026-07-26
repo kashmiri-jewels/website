@@ -1,0 +1,42 @@
+name: Retry shipment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        default: qa
+        options:
+          - qa
+          - prod
+      order_number:
+        description: Friendly order number, for example KJ-20260511-A7K2F1
+        required: true
+        type: string
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Build request body
+        env:
+          ORDER_NUMBER: ${{ inputs.order_number }}
+        run: |
+          node -e "process.stdout.write(JSON.stringify({ orderNumber: process.env.ORDER_NUMBER }))" > body.json
+
+      - name: Retry shipment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPS_SERVICE_ROLE_KEY: ${{ secrets.OPS_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          curl --fail-with-body \
+            -X POST "$SUPABASE_URL/functions/v1/retry-shipment" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "x-ops-key: $OPS_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            --data @body.json

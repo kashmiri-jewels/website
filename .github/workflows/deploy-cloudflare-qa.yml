@@ -1,0 +1,126 @@
+name: Deploy storefront QA
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types:
+      - sanity-content-qa
+  push:
+    branches:
+      - dev
+
+concurrency:
+  group: deploy-storefront-qa
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: qa
+    env:
+      TARGET_ENVIRONMENT: qa
+      CLOUDFLARE_ENV: qa
+      SANITY_VALIDATE_REQUIRED_CONTENT: ${{ vars.SANITY_VALIDATE_REQUIRED_CONTENT }}
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${{ vars.GOOGLE_SHEETS_SPREADSHEET_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_SHEETS_RANGE: ${{ vars.GOOGLE_SHEETS_RANGE }}
+      PRODUCT_IMAGE_MANIFEST_PATH: src/generated/product-image-manifest.json
+      PRODUCT_IMAGE_PUBLIC_BASE_URL: ${{ vars.PRODUCT_IMAGE_PUBLIC_BASE_URL }}
+      R2_PRODUCT_IMAGES_BUCKET: ${{ vars.R2_PRODUCT_IMAGES_BUCKET }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_UMAMI_DOMAINS: ${{ vars.VITE_UMAMI_DOMAINS }}
+      VITE_UMAMI_SCRIPT_URL: ${{ vars.VITE_UMAMI_SCRIPT_URL }}
+      VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}
+      VITE_SANITY_PROJECT_ID: ${{ vars.VITE_SANITY_PROJECT_ID }}
+      VITE_SANITY_DATASET: ${{ vars.VITE_SANITY_DATASET }}
+      VITE_SANITY_API_VERSION: ${{ vars.VITE_SANITY_API_VERSION }}
+      SANITY_CONTENT_PERSPECTIVE: drafts
+      SANITY_READ_TOKEN: ${{ secrets.SANITY_READ_TOKEN }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPS_SERVICE_ROLE_KEY: ${{ secrets.OPS_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GITHUB_ACTIONS_TOKEN: ${{ secrets.GITHUB_ACTIONS_TOKEN }}
+      EXPECTED_SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      CLOUDFLARE_DOMAIN: ${{ vars.CLOUDFLARE_DOMAIN }}
+      DELHIVERY_API_TOKEN: ${{ secrets.DELHIVERY_API_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || 'dev' }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate QA deployment config
+        run: |
+          required() {
+            test -n "${!1}" || { echo "$1 is required"; exit 1; }
+          }
+
+          required GOOGLE_SHEETS_SPREADSHEET_ID
+          required GOOGLE_SERVICE_ACCOUNT_JSON
+          required GOOGLE_SHEETS_RANGE
+          required PRODUCT_IMAGE_PUBLIC_BASE_URL
+          required R2_PRODUCT_IMAGES_BUCKET
+          required R2_ACCESS_KEY_ID
+          required R2_SECRET_ACCESS_KEY
+          required SUPABASE_URL
+          required SUPABASE_SERVICE_ROLE_KEY
+          required EXPECTED_SUPABASE_PROJECT_REF
+          required VITE_SUPABASE_URL
+          required VITE_SUPABASE_ANON_KEY
+          required VITE_UMAMI_DOMAINS
+          required VITE_UMAMI_SCRIPT_URL
+          required VITE_UMAMI_WEBSITE_ID
+          required VITE_SANITY_PROJECT_ID
+          required VITE_SANITY_DATASET
+          required VITE_SANITY_API_VERSION
+          required SANITY_READ_TOKEN
+          required CLOUDFLARE_ACCOUNT_ID
+          required CLOUDFLARE_API_TOKEN
+          required CLOUDFLARE_WORKER_NAME
+          required CLOUDFLARE_DOMAIN
+          required DELHIVERY_API_TOKEN
+
+      - run: pnpm typecheck
+
+      - name: Publish QA catalog data and images
+        run: pnpm publish:catalog
+
+      - run: pnpm build
+
+      - name: Sync QA Worker secrets
+        run: |
+          put_secret() {
+            local name="$1"
+            local value="${!name:-}"
+            test -n "$value" || return 0
+            printf '%s' "$value" | pnpm exec wrangler secret put "$name" --env qa --name "$CLOUDFLARE_WORKER_NAME"
+          }
+
+          put_secret SUPABASE_URL
+          put_secret SUPABASE_SERVICE_ROLE_KEY
+          put_secret OPS_SERVICE_ROLE_KEY
+          put_secret GITHUB_ACTIONS_TOKEN
+          put_secret DELHIVERY_API_TOKEN
+
+      - name: Deploy QA to Cloudflare Workers
+        run: pnpm exec wrangler deploy --env qa --name "$CLOUDFLARE_WORKER_NAME"
+
+      - name: Verify QA domain
+        run: curl --fail --silent --show-error --head --retry 5 --retry-delay 3 "https://${CLOUDFLARE_DOMAIN}"

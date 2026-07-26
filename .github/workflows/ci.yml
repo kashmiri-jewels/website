@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: qa
+    env:
+      SANITY_VALIDATE_REQUIRED_CONTENT: ${{ vars.SANITY_VALIDATE_REQUIRED_CONTENT }}
+      VITE_SANITY_PROJECT_ID: ${{ vars.VITE_SANITY_PROJECT_ID }}
+      VITE_SANITY_DATASET: ${{ vars.VITE_SANITY_DATASET }}
+      VITE_SANITY_API_VERSION: ${{ vars.VITE_SANITY_API_VERSION }}
+      SANITY_CONTENT_PERSPECTIVE: published
+      SANITY_READ_TOKEN: ${{ secrets.SANITY_READ_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build

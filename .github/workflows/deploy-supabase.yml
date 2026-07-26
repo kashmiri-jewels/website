@@ -1,0 +1,132 @@
+name: Deploy Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        default: qa
+        options:
+          - qa
+          - prod
+      sync_secrets_only:
+        description: Sync Edge Function secrets without pushing migrations or deploying functions
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPS_SERVICE_ROLE_KEY: ${{ secrets.OPS_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+      RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+      RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
+      DELHIVERY_API_TOKEN: ${{ secrets.DELHIVERY_API_TOKEN }}
+      DELHIVERY_ENABLED: ${{ vars.DELHIVERY_ENABLED }}
+      DELHIVERY_PACKAGE_BREADTH_CM: ${{ vars.DELHIVERY_PACKAGE_BREADTH_CM }}
+      DELHIVERY_PACKAGE_HEIGHT_CM: ${{ vars.DELHIVERY_PACKAGE_HEIGHT_CM }}
+      DELHIVERY_PACKAGE_LENGTH_CM: ${{ vars.DELHIVERY_PACKAGE_LENGTH_CM }}
+      DELHIVERY_PACKAGE_WEIGHT_GRAMS: ${{ vars.DELHIVERY_PACKAGE_WEIGHT_GRAMS }}
+      WHATSAPP_ORDER_NOTIFICATIONS_ENABLED: ${{ vars.WHATSAPP_ORDER_NOTIFICATIONS_ENABLED }}
+      WHATSAPP_API_TOKEN: ${{ secrets.WHATSAPP_API_TOKEN }}
+      WHATSAPP_GRAPH_API_VERSION: ${{ vars.WHATSAPP_GRAPH_API_VERSION }}
+      WHATSAPP_PHONE_NUMBER_ID: ${{ vars.WHATSAPP_PHONE_NUMBER_ID }}
+      WHATSAPP_ORDER_CONFIRMED_TEMPLATE_NAME: ${{ vars.WHATSAPP_ORDER_CONFIRMED_TEMPLATE_NAME }}
+      WHATSAPP_ORDER_CONFIRMED_TEMPLATE_LANGUAGE: ${{ vars.WHATSAPP_ORDER_CONFIRMED_TEMPLATE_LANGUAGE }}
+      WHATSAPP_ESTIMATED_DELIVERY_DAYS: ${{ vars.WHATSAPP_ESTIMATED_DELIVERY_DAYS }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.107.0
+
+      - name: Sync Edge Function secrets
+        run: |
+          required() {
+            test -n "${!1}" || { echo "$1 is required"; exit 1; }
+          }
+
+          required SUPABASE_PROJECT_REF
+          required SUPABASE_URL
+          required SUPABASE_SERVICE_ROLE_KEY
+          required OPS_SERVICE_ROLE_KEY
+          required RAZORPAY_KEY_ID
+          required RAZORPAY_KEY_SECRET
+          required RAZORPAY_WEBHOOK_SECRET
+          required DELHIVERY_API_TOKEN
+          required DELHIVERY_ENABLED
+          required DELHIVERY_PACKAGE_BREADTH_CM
+          required DELHIVERY_PACKAGE_HEIGHT_CM
+          required DELHIVERY_PACKAGE_LENGTH_CM
+          required DELHIVERY_PACKAGE_WEIGHT_GRAMS
+          required WHATSAPP_ORDER_NOTIFICATIONS_ENABLED
+
+          if [ "$WHATSAPP_ORDER_NOTIFICATIONS_ENABLED" = "true" ]; then
+            required WHATSAPP_API_TOKEN
+            required WHATSAPP_GRAPH_API_VERSION
+            required WHATSAPP_PHONE_NUMBER_ID
+            required WHATSAPP_ORDER_CONFIRMED_TEMPLATE_NAME
+            required WHATSAPP_ORDER_CONFIRMED_TEMPLATE_LANGUAGE
+          fi
+
+          secrets=(
+            SUPABASE_URL="$SUPABASE_URL"
+            SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+            OPS_SERVICE_ROLE_KEY="$OPS_SERVICE_ROLE_KEY"
+            RAZORPAY_KEY_ID="$RAZORPAY_KEY_ID"
+            RAZORPAY_KEY_SECRET="$RAZORPAY_KEY_SECRET"
+            RAZORPAY_WEBHOOK_SECRET="$RAZORPAY_WEBHOOK_SECRET"
+            DELHIVERY_API_TOKEN="$DELHIVERY_API_TOKEN"
+            DELHIVERY_ENABLED="$DELHIVERY_ENABLED"
+            DELHIVERY_PACKAGE_BREADTH_CM="$DELHIVERY_PACKAGE_BREADTH_CM"
+            DELHIVERY_PACKAGE_HEIGHT_CM="$DELHIVERY_PACKAGE_HEIGHT_CM"
+            DELHIVERY_PACKAGE_LENGTH_CM="$DELHIVERY_PACKAGE_LENGTH_CM"
+            DELHIVERY_PACKAGE_WEIGHT_GRAMS="$DELHIVERY_PACKAGE_WEIGHT_GRAMS"
+            WHATSAPP_ORDER_NOTIFICATIONS_ENABLED="$WHATSAPP_ORDER_NOTIFICATIONS_ENABLED"
+          )
+
+          optional_secret() {
+            local name="$1"
+            local value="${!name:-}"
+            test -n "$value" || return 0
+            secrets+=("$name=$value")
+          }
+
+          optional_secret WHATSAPP_API_TOKEN
+          optional_secret WHATSAPP_GRAPH_API_VERSION
+          optional_secret WHATSAPP_PHONE_NUMBER_ID
+          optional_secret WHATSAPP_ORDER_CONFIRMED_TEMPLATE_NAME
+          optional_secret WHATSAPP_ORDER_CONFIRMED_TEMPLATE_LANGUAGE
+          optional_secret WHATSAPP_ESTIMATED_DELIVERY_DAYS
+
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${secrets[@]}"
+
+      - name: Link project
+        if: ${{ !inputs.sync_secrets_only }}
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Push database migrations
+        if: ${{ !inputs.sync_secrets_only }}
+        run: supabase db push
+
+      - name: Deploy Edge Functions
+        if: ${{ !inputs.sync_secrets_only }}
+        run: |
+          supabase functions deploy create-checkout-order
+          supabase functions deploy verify-payment
+          supabase functions deploy razorpay-webhook
+          supabase functions deploy create-shipment
+          supabase functions deploy retry-shipment
+          supabase functions deploy customer-order
