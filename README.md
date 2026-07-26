@@ -1,6 +1,6 @@
 # Kashmiri Jewels
 
-Fashion storefront built with TanStack Start, Tailwind CSS v4, Base UI, Supabase, and Cloudflare.
+Jewellery storefront built with TanStack Start, Tailwind CSS v4, Base UI, Supabase, and Cloudflare.
 
 ## Getting Started
 

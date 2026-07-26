@@ -90,7 +90,7 @@ export function ProductFilters({
           <div>
             <p className="font-serif text-3xl font-normal leading-none text-[var(--color-ink)]">Filters</p>
             <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">
-              Narrow by style, size, price, and availability.
+              Narrow by category, size, price, and availability.
             </p>
           </div>
           {activeFilterCount > 0 ? (
@@ -128,7 +128,7 @@ export function ProductFilters({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search styles"
+            placeholder="Search pieces"
             className="h-11 w-full border border-[var(--color-line)] bg-[var(--color-paper)] pl-10 pr-11 text-sm text-[var(--color-ink)] outline-none transition placeholder:text-[var(--color-muted)]/70 focus:border-[var(--color-primary)] focus:bg-[var(--color-surface-soft)]"
           />
           {query ? (
@@ -307,7 +307,7 @@ export function ProductFilters({
       <div className="border-t border-[var(--color-line)] pt-5">
         <div className="flex items-center justify-between gap-3 text-sm">
           <p className="text-[var(--color-muted)]">
-            {resultCount} {resultCount === 1 ? 'style' : 'styles'}
+            {resultCount} {resultCount === 1 ? 'piece' : 'pieces'}
           </p>
           {activeFilterCount > 0 && !onDone ? (
             <button
@@ -334,7 +334,7 @@ export function ProductFilters({
             onClick={onDone}
             className="mt-4 inline-flex h-12 w-full items-center justify-center bg-[var(--color-primary)] px-5 text-sm font-medium text-[var(--color-paper)] transition duration-150 ease-out hover:bg-[var(--color-primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 active:scale-[0.99]"
           >
-            Show {resultCount} {resultCount === 1 ? 'style' : 'styles'}
+            Show {resultCount} {resultCount === 1 ? 'piece' : 'pieces'}
           </Button>
         ) : null}
       </div>

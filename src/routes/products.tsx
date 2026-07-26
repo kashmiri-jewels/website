@@ -26,7 +26,7 @@ export const Route = createFileRoute('/products')({
     createPageMeta({
       title: 'Shop Handcrafted Jewellery | Kashmiri Jewels',
       description:
-        'Browse Kashmiri Jewels handcrafted pieces by style, price, availability, and offers.',
+        'Browse Kashmiri Jewels handcrafted pieces by category, price, availability, and offers.',
       path: '/products',
     }),
   validateSearch: validateProductSearch,
@@ -109,11 +109,11 @@ function ProductsPage() {
         </div>
         <div className="max-w-2xl lg:justify-self-end">
           <p className="text-base leading-7 text-[var(--color-muted)]">
-            Find heritage-inspired jewellery, everyday accents, and occasion-ready pieces by style,
+            Find heritage-inspired jewellery, everyday accents, and occasion-ready pieces by category,
             price, and availability.
           </p>
           <StyleFinder
-            triggerLabel="Find my style"
+            triggerLabel="Find my jewel"
             triggerClassName="mt-5 inline-flex h-11 items-center justify-center gap-2 border border-[var(--color-line)] bg-[var(--color-paper)] px-4 text-sm font-medium text-[var(--color-ink)] transition duration-200 ease-out hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 active:scale-[0.99]"
           />
         </div>
@@ -131,7 +131,7 @@ function ProductsPage() {
                 onClick={() => updateSearch({ category: 'all' })}
                 className={`inline-flex shrink-0 items-center border px-3 py-2 text-sm transition sm:px-4 ${
                   resolvedSearch.category === 'all'
-                    ? 'border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]'
+                    ? 'border-[var(--color-blush)] bg-[var(--color-ink)] text-[#f7df9a]'
                     : 'border-[var(--color-line)] bg-[var(--color-paper)] text-[var(--color-ink)] hover:border-[var(--color-ink)]'
                 }`}
               >
@@ -145,7 +145,7 @@ function ProductsPage() {
                   onClick={() => updateSearch({ category })}
                   className={`inline-flex shrink-0 items-center border px-3 py-2 text-sm transition sm:px-4 ${
                     resolvedSearch.category === category
-                      ? 'border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]'
+                      ? 'border-[var(--color-blush)] bg-[var(--color-ink)] text-[#f7df9a]'
                       : 'border-[var(--color-line)] bg-[var(--color-paper)] text-[var(--color-ink)] hover:border-[var(--color-ink)]'
                   }`}
                 >
@@ -175,7 +175,7 @@ function ProductsPage() {
                     Filters
                   </h2>
                   <p className="mt-1 text-sm text-[var(--color-muted)]">
-                    Refine by style, price, and availability.
+                    Refine by category, price, and availability.
                   </p>
                 </div>
               </div>

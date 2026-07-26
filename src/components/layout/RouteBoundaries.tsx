@@ -13,7 +13,7 @@ export function RoutePending() {
         />
         <p className="mt-4 text-sm font-medium text-[var(--color-ink)]">Loading Kashmiri Jewels</p>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Preparing the latest styles and availability.
+          Preparing the latest pieces and availability.
         </p>
       </div>
     </main>
@@ -84,7 +84,7 @@ export function RouteNotFound() {
               />
             }
           >
-            Shop current styles
+            Shop current pieces
           </Button>
           <Button
             nativeButton={false}

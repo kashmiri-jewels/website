@@ -13,8 +13,8 @@ export function SiteHeader() {
   const settings = getSiteSettingsContent()
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-[var(--color-line)] bg-[var(--color-paper)]/96 backdrop-blur-sm">
-      <div className="bg-[var(--color-primary)] px-4 py-2 text-center text-[0.6875rem] font-medium uppercase leading-4 tracking-[0.12em] text-[var(--color-paper)] sm:px-6 lg:px-8">
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-[var(--color-line)] bg-[var(--color-paper)]/96 shadow-[0_1px_0_rgb(184_148_70_/_0.16)] backdrop-blur-sm">
+      <div className="bg-[var(--color-primary)] px-4 py-2 text-center text-[0.6875rem] font-medium uppercase leading-4 tracking-[0.12em] text-[#f7df9a] sm:px-6 lg:px-8">
         <span className="sm:hidden">{settings.announcement.mobileText}</span>
         <span className="hidden sm:inline">{settings.announcement.desktopText}</span>
       </div>

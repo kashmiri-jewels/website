@@ -28,9 +28,9 @@ export function HomeHero({ content }: HomeHeroProps) {
 
   return (
     <section>
-      <div className="border-b border-[var(--color-line)] bg-[var(--color-surface)]">
+      <div className="border-b border-[var(--color-line)] bg-[var(--color-primary)]">
         <h1 className="sr-only">{content.screenReaderTitle}</h1>
-        <div className="relative aspect-[2/1] overflow-hidden bg-[#f5eadc] sm:aspect-[16/7] lg:aspect-[5/2] xl:max-h-[590px]">
+        <div className="relative aspect-[2/1] overflow-hidden bg-[var(--color-primary)] sm:aspect-[16/7] lg:aspect-[5/2] xl:max-h-[590px]">
           {slides.map((slide, index) => (
             <img
               key={slide.url}
@@ -54,7 +54,7 @@ export function HomeHero({ content }: HomeHeroProps) {
                   render={
                     <a
                       href={content.primaryCta.url}
-                      className="inline-flex h-9 items-center justify-center bg-[var(--color-primary)] px-3 text-xs font-medium text-[var(--color-paper)] transition duration-150 ease-out hover:bg-[var(--color-primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
+                      className="inline-flex h-9 items-center justify-center border border-[var(--color-blush)] bg-[var(--color-primary)] px-3 text-xs font-medium text-[#f7df9a] transition duration-150 ease-out hover:bg-[var(--color-primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blush)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
                     />
                   }
                 >
@@ -62,7 +62,7 @@ export function HomeHero({ content }: HomeHeroProps) {
                 </Button>
                 <StyleFinder
                   triggerLabel={content.styleFinderLabel}
-                  triggerClassName="inline-flex h-9 items-center justify-center gap-2 border border-[var(--color-line)] bg-[var(--color-paper)] px-3 text-xs font-medium text-[var(--color-ink)] transition duration-150 ease-out hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
+                  triggerClassName="inline-flex h-9 items-center justify-center gap-2 border border-[var(--color-blush)] bg-[var(--color-paper)] px-3 text-xs font-medium text-[var(--color-ink)] transition duration-150 ease-out hover:bg-[var(--color-blush-surface)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blush)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
                 />
               </div>
             </div>

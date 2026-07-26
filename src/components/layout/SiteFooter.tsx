@@ -30,23 +30,23 @@ export function SiteFooter() {
   const settings = getSiteSettingsContent()
 
   return (
-    <footer className="border-t border-[var(--color-line)] bg-[var(--color-paper)] px-4 pb-28 pt-10 sm:px-6 sm:pb-10 lg:px-8">
+    <footer className="border-t border-[var(--color-line)] bg-[var(--color-primary)] px-4 pb-28 pt-10 text-[#f7df9a] sm:px-6 sm:pb-10 lg:px-8">
       <div className="mx-auto grid max-w-[90rem] gap-10">
         <div className="py-5 md:py-8">
           <div>
-            <p className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-[var(--color-muted)]">
+            <p className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-[#d6b05d]">
               {settings.footerEyebrow}
             </p>
-            <h2 className="mt-3 max-w-2xl font-serif text-4xl font-normal leading-none text-[var(--color-ink)] sm:text-5xl">
+            <h2 className="mt-3 max-w-2xl font-serif text-4xl font-normal leading-none text-[var(--color-paper)] sm:text-5xl">
               {settings.footerHeadline}
             </h2>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-[var(--color-muted)] sm:text-base">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-[#e5d8b5] sm:text-base">
               {settings.footerDescription}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-8 border-t border-[var(--color-line)] pt-8 text-sm text-[var(--color-muted)] md:flex-row">
+        <div className="flex flex-col justify-between gap-8 border-t border-[#b89446]/45 pt-8 text-sm text-[#e5d8b5] md:flex-row">
           <div>
             <Link
               to="/"
@@ -56,7 +56,7 @@ export function SiteFooter() {
             <img
                 src="/assets/brand/kashmiri-jewels-logo.webp"
                 alt="Kashmiri Jewels"
-                className="h-14 w-auto"
+                className="h-14 w-auto bg-[var(--color-paper)] px-2 py-1"
               />
             </Link>
             <p className="mt-3 max-w-sm leading-6">
@@ -68,13 +68,13 @@ export function SiteFooter() {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {settings.footerSections.map((section) => (
               <div key={section.title}>
-                <h2 className="mb-3 text-sm font-medium text-[var(--color-ink)]">{section.title}</h2>
+                <h2 className="mb-3 text-sm font-medium text-[#f7df9a]">{section.title}</h2>
                 <ul className="space-y-2">
                   {section.links.map((link) => (
                     <li key={`${section.title}-${link.label}`}>
                       <a
                         href={link.url}
-                        className="transition duration-150 ease-out hover:text-[var(--color-primary)]"
+                        className="transition duration-150 ease-out hover:text-[#f7df9a]"
                       >
                         {link.label}
                       </a>
@@ -86,25 +86,25 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="grid gap-6 border-t border-[var(--color-line)] py-7 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 border-t border-[#b89446]/45 py-7 sm:grid-cols-2 lg:grid-cols-4">
           {settings.benefits.map(({ icon, title, copy }) => {
             const Icon = benefitIcons[icon]
 
             return (
             <div key={title} className="flex gap-4">
-              <span className="grid size-11 shrink-0 place-items-center border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-primary)]">
+              <span className="grid size-11 shrink-0 place-items-center border border-[#d6b05d]/65 bg-[#0d493b] text-[#f7df9a]">
                 <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
               </span>
               <div>
-                <h2 className="text-sm font-medium text-[var(--color-ink)]">{title}</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{copy}</p>
+                <h2 className="text-sm font-medium text-[#f7df9a]">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-[#e5d8b5]">{copy}</p>
               </div>
             </div>
             )
           })}
         </div>
 
-        <div className="flex flex-col justify-between gap-3 border-t border-[var(--color-line)] pt-6 text-xs text-[var(--color-muted)] sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-3 border-t border-[#b89446]/45 pt-6 text-xs text-[#d7c89e] sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} {settings.copyrightLine}</p>
           <p>{settings.bottomNote}</p>
         </div>
@@ -115,7 +115,7 @@ export function SiteFooter() {
 
 function RazorpayBadge() {
   return (
-    <div className="mt-5 inline-flex items-center gap-2 border border-[var(--color-line)] bg-[var(--color-surface-soft)] px-3 py-2 text-xs font-medium text-[var(--color-ink)]">
+    <div className="mt-5 inline-flex items-center gap-2 border border-[#d6b05d]/45 bg-[#0d493b] px-3 py-2 text-xs font-medium text-[#f7df9a]">
       <span>Secure checkout powered by</span>
       <span className="h-4 w-px bg-[var(--color-line)]" aria-hidden="true" />
       <RazorpayLogo className="h-4 w-auto" />
@@ -138,7 +138,7 @@ function SocialLinks({ links }: { links: SiteSettingsContent['socialLinks'] }) {
             target="_blank"
             rel="noreferrer"
             aria-label={`Kashmiri Jewels on ${link.label}`}
-            className="inline-flex size-10 items-center justify-center border border-[var(--color-line)] bg-[var(--color-paper)] text-xs font-semibold text-[var(--color-ink)] transition duration-150 ease-out hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+            className="inline-flex size-10 items-center justify-center border border-[#d6b05d]/45 bg-[#0d493b] text-xs font-semibold text-[#f7df9a] transition duration-150 ease-out hover:border-[#f7df9a] hover:text-[var(--color-paper)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blush)] focus-visible:ring-offset-2"
           >
             <svg
               viewBox="0 0 24 24"

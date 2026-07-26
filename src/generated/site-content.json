@@ -1,62 +1,114 @@
 {
   "siteSettings": {
     "announcement": {
-      "desktopText": "Free shipping on orders above ₹499 — Easy 15-day returns",
-      "mobileText": "Free shipping above ₹499 — Easy returns"
+      "desktopText": "Heritage handcrafted jewellery - secure checkout and careful delivery",
+      "mobileText": "Handcrafted jewellery - secure checkout"
     },
     "headerLinks": [
-      { "label": "Shop", "url": "/products" },
-      { "label": "New arrivals", "url": "/products?sort=newest" },
-      { "label": "Track order", "url": "/orders" }
+      {
+        "label": "Shop",
+        "url": "/products"
+      },
+      {
+        "label": "New arrivals",
+        "url": "/products?sort=newest"
+      },
+      {
+        "label": "Track order",
+        "url": "/orders"
+      }
     ],
-    "footerEyebrow": "Stay in style",
-    "footerHeadline": "Fashion that moves with you.",
-    "footerDescription": "Trending styles delivered to your door with easy returns and secure checkout.",
-    "footerShortCopy": "Indian fashion label delivering curated style across the country.",
+    "footerEyebrow": "Heritage. Handcrafted. Timeless.",
+    "footerHeadline": "Jewels with a Kashmir soul.",
+    "footerDescription": "Discover handcrafted pieces shaped by heritage, finished with a timeless green-and-gold signature.",
+    "footerShortCopy": "Kashmiri Jewels brings heritage-inspired jewellery to modern celebrations and everyday rituals.",
     "footerSections": [
       {
         "title": "Shop",
         "links": [
-          { "label": "All products", "url": "/products" },
-          { "label": "New arrivals", "url": "/products?sort=newest" }
+          {
+            "label": "All products",
+            "url": "/products"
+          },
+          {
+            "label": "New arrivals",
+            "url": "/products?sort=newest"
+          }
         ]
       },
       {
         "title": "Support",
         "links": [
-          { "label": "Track order", "url": "/orders" },
-          { "label": "Shipping & returns", "url": "/shipping-returns" },
-          { "label": "Contact us", "url": "/contact" }
+          {
+            "label": "Track order",
+            "url": "/orders"
+          },
+          {
+            "label": "Shipping & returns",
+            "url": "/shipping-returns"
+          },
+          {
+            "label": "Contact us",
+            "url": "/contact"
+          }
         ]
       },
       {
         "title": "Company",
         "links": [
-          { "label": "About", "url": "/about" },
-          { "label": "Privacy policy", "url": "/privacy" },
-          { "label": "Terms of service", "url": "/terms" }
+          {
+            "label": "About",
+            "url": "/about"
+          },
+          {
+            "label": "Privacy policy",
+            "url": "/privacy"
+          },
+          {
+            "label": "Terms of service",
+            "url": "/terms"
+          }
         ]
       }
     ],
     "socialLinks": [
-      { "label": "Instagram", "url": "https://instagram.com/kashmirijewels" }
+      {
+        "label": "Instagram",
+        "url": "https://instagram.com/kashmirijewels"
+      }
     ],
     "benefits": [
-      { "icon": "truck", "title": "Free shipping", "copy": "Free shipping on all orders above ₹499." },
-      { "icon": "returns", "title": "Easy returns", "copy": "Easy 15-day return policy. No questions asked." },
-      { "icon": "shield", "title": "Secure checkout", "copy": "Protected by Razorpay. Your data stays safe." },
-      { "icon": "bag", "title": "Curated styles", "copy": "Handpicked fashion that fits your vibe." }
+      {
+        "icon": "truck",
+        "title": "Careful delivery",
+        "copy": "Each order is packed with care for safe delivery."
+      },
+      {
+        "icon": "returns",
+        "title": "Easy support",
+        "copy": "We are here to help with product and order questions."
+      },
+      {
+        "icon": "shield",
+        "title": "Secure checkout",
+        "copy": "Protected by Razorpay. Your data stays safe."
+      },
+      {
+        "icon": "bag",
+        "title": "Curated jewels",
+        "copy": "Handpicked pieces inspired by Kashmiri craft and timeless detail."
+      }
     ],
     "copyrightLine": "Kashmiri Jewels. All rights reserved.",
     "bottomNote": "Prices are in Indian Rupees (₹)."
   },
   "homePage": {
     "seo": {
-      "title": "Kashmiri Jewels — Indian Fashion Label",
-      "description": "Discover curated Indian fashion at Kashmiri Jewels. Trendy styles, easy returns, and free shipping above ₹499.",
+      "title": "Kashmiri Jewels - Heritage Handcrafted Jewellery",
+      "description": "Discover Kashmiri Jewels, a heritage-inspired jewellery label with handcrafted pieces for everyday elegance and celebrations.",
       "image": {
         "url": "/banners/40.jpg",
-        "alt": "Kashmiri Jewels fashion"
+        "alt": "Kashmiri Jewels collection"
       }
     },
     "hero": {
@@ -75,28 +127,40 @@
         "label": "Shop now",
         "url": "/products"
       },
-      "styleFinderLabel": "Find your style"
+      "styleFinderLabel": "Find your jewel"
     },
     "categorySection": {
       "eyebrow": "Categories",
       "heading": "Shop by category",
-      "link": { "label": "View all", "url": "/products" }
+      "link": {
+        "label": "View all",
+        "url": "/products"
+      }
     },
     "bestSellersSection": {
       "eyebrow": "Best sellers",
-      "heading": "Most loved styles",
-      "link": { "label": "View all", "url": "/products" }
+      "heading": "Most loved jewels",
+      "link": {
+        "label": "View all",
+        "url": "/products"
+      }
     },
     "imageStory": {
-      "eyebrow": "The look",
-      "heading": "Style inspiration",
-      "copy": "Explore curated looks and find your perfect fit.",
-      "link": { "label": "Explore", "url": "/products" }
+      "eyebrow": "The craft",
+      "heading": "Rooted in heritage",
+      "copy": "Explore pieces with ornate detail, graceful forms, and the deep green-and-gold character of Kashmiri Jewels.",
+      "link": {
+        "label": "Explore",
+        "url": "/products"
+      }
     },
     "newArrivalsSection": {
       "eyebrow": "New in",
       "heading": "Just dropped",
-      "link": { "label": "View all", "url": "/products?sort=newest" }
+      "link": {
+        "label": "View all",
+        "url": "/products?sort=newest"
+      }
     }
   },
   "staticPages": [
@@ -104,14 +168,17 @@
       "slug": "about",
       "eyebrow": "About us",
       "title": "About Kashmiri Jewels",
-      "seoTitle": "About Kashmiri Jewels — Indian Fashion Label",
-      "seoDescription": "Learn about Kashmiri Jewels, the Indian fashion label bringing you curated styles.",
+      "seoTitle": "About Kashmiri Jewels - Heritage Jewellery",
+      "seoDescription": "Learn about Kashmiri Jewels, a heritage-inspired jewellery label rooted in craft and timeless design.",
       "body": [
         {
           "_type": "block",
           "style": "normal",
           "children": [
-            { "_type": "span", "text": "Kashmiri Jewels is an Indian fashion label bringing curated styles to your doorstep. We believe fashion is a form of self-expression, and our collections are designed to help you find your unique voice." }
+            {
+              "_type": "span",
+              "text": "Kashmiri Jewels is a heritage-inspired jewellery label shaped by Kashmiri artistry, ornate detailing, and timeless design. Our collections are created for meaningful gifting, celebrations, and everyday elegance."
+            }
           ]
         }
       ]
@@ -127,7 +194,10 @@
           "_type": "block",
           "style": "normal",
           "children": [
-            { "_type": "span", "text": "Reach out to us at hello.kashmirijewels@gmail.com for any questions, concerns, or feedback. We would love to hear from you." }
+            {
+              "_type": "span",
+              "text": "Reach out to us at hello.kashmirijewels@gmail.com for any questions, concerns, or feedback. We would love to hear from you."
+            }
           ]
         }
       ]
@@ -143,7 +213,10 @@
           "_type": "block",
           "style": "normal",
           "children": [
-            { "_type": "span", "text": "Your privacy matters to us. We collect only the information necessary to process your orders and improve your shopping experience. We do not share your personal data with third parties except as required for payment processing and shipping." }
+            {
+              "_type": "span",
+              "text": "Your privacy matters to us. We collect only the information necessary to process your orders and improve your shopping experience. We do not share your personal data with third parties except as required for payment processing and shipping."
+            }
           ]
         }
       ]
@@ -159,7 +232,10 @@
           "_type": "block",
           "style": "normal",
           "children": [
-            { "_type": "span", "text": "We offer free shipping on all orders above ₹499. Standard shipping is ₹100. We offer a 15-day easy return policy. Items must be unworn with tags attached. Refunds are processed within 5-7 business days after we receive the return." }
+            {
+              "_type": "span",
+              "text": "Each Kashmiri Jewels order is packed carefully for safe delivery. Shipping timelines, return eligibility, and refund details are confirmed with your order so every purchase is handled clearly and securely."
+            }
           ]
         }
       ]
@@ -175,7 +251,10 @@
           "_type": "block",
           "style": "normal",
           "children": [
-            { "_type": "span", "text": "By using Kashmiri Jewels, you agree to these terms. All products are subject to availability. We reserve the right to cancel orders in case of stock unavailability or pricing errors. Prices are in Indian Rupees and include applicable taxes." }
+            {
+              "_type": "span",
+              "text": "By using Kashmiri Jewels, you agree to these terms. All products are subject to availability. We reserve the right to cancel orders in case of stock unavailability or pricing errors. Prices are in Indian Rupees and include applicable taxes."
+            }
           ]
         }
       ]

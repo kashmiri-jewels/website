@@ -1,27 +1,27 @@
-# Neonfold Style Adoption Plan
+# Kashmiri Jewels Style Adoption Plan
 
 ## Goal
 
-Adopt the visual and interaction quality of the Neonfold storefront while keeping Kashmiri Jewels' brand
+Adopt the visual and interaction quality of the Kashmiri Jewels storefront while keeping Kashmiri Jewels' brand
 palette:
 
-- Primary Navy: `#1C2E4A`
+- Primary Emerald: `#073D31`
 - Pearl White: `#F4F2ED`
 - Soft Silver: `#C9C7C3`
-- Dusty Blush: `#D8B7B1`
+- Heritage Gold: `#B89446`
 
 This should be a layout, structure, spacing, transition, and typography upgrade, not a brand-color
-replacement. The goal is to use Neonfold's storefront discipline without copying its exact hero
+replacement. The goal is to use Kashmiri Jewels's storefront discipline without copying its exact hero
 composition.
 
 ## References Reviewed
 
-- Live reference: `https://qa.neonfold.com/`
-- Live shop reference: `https://qa.neonfold.com/shop`
-- Neonfold local repo: `/Users/optimus/Developer/overnight/ecom`
+- Live reference: `https://qa.Kashmiri Jewels.com/`
+- Live shop reference: `https://qa.Kashmiri Jewels.com/shop`
+- Kashmiri Jewels local repo: `/Users/optimus/Developer/overnight/ecom`
 - Current Kashmiri Jewels local app: `http://localhost:3000/` and `http://localhost:3000/products`
 
-Key Neonfold files reviewed:
+Key Kashmiri Jewels files reviewed:
 
 - `apps/storefront/src/app/globals.css`
 - `apps/storefront/src/components/site/site-header.tsx`
@@ -49,11 +49,11 @@ Key Kashmiri Jewels files reviewed:
 - `src/routes/products.tsx`
 - `src/routes/products_.$slug.tsx`
 
-## What Makes Neonfold Feel Better
+## What Makes Kashmiri Jewels Feel Better
 
 ### 1. Strong Layout Structure, Not Decorative Layout
 
-Neonfold uses fewer but stronger layout decisions:
+Kashmiri Jewels uses fewer but stronger layout decisions:
 
 - Product sections use bordered headers and large headings instead of decorative cards.
 - Imagery is edge-to-edge inside its frame, with minimal radius and minimal overlays.
@@ -73,16 +73,16 @@ Current Kashmiri Jewels has good information density, but it often feels more li
 
 ### 2. Stronger Typography Hierarchy
 
-Neonfold uses `Instrument Serif` for display headings and `Geist` for navigation, body copy, and
+Kashmiri Jewels uses `Instrument Serif` for display headings and `Geist` for navigation, body copy, and
 commerce details.
 
-Kashmiri Jewels should use the same font pairing, self-hosted from the local Neonfold-generated WOFF2
-assets. The Tailwind `font-serif` token carries the same role Neonfold's `font-heading` carries,
+Kashmiri Jewels should use the same font pairing, self-hosted from the local Kashmiri Jewels-generated WOFF2
+assets. The Tailwind `font-serif` token carries the same role Kashmiri Jewels's `font-heading` carries,
 while `font-sans` maps to Geist.
 
 ### 3. Squared Commerce Controls
 
-Neonfold mostly uses square or barely rounded controls:
+Kashmiri Jewels mostly uses square or barely rounded controls:
 
 - Buttons are `rounded-none`.
 - Product cards and galleries are square-edged.
@@ -90,11 +90,11 @@ Neonfold mostly uses square or barely rounded controls:
 - Icon buttons use familiar symbols with restrained styling.
 
 Kashmiri Jewels currently uses many rounded pills. That reads friendlier, but less premium and less aligned
-with Neonfold.
+with Kashmiri Jewels.
 
 ### 4. Fixed Header and Centered Brand
 
-Neonfold's header is fixed, translucent, and centered around the brand name:
+Kashmiri Jewels's header is fixed, translucent, and centered around the brand name:
 
 - Announcement strip on top.
 - Left-side desktop navigation.
@@ -106,7 +106,7 @@ utility styled. It works, but it does not set the same premium first impression.
 
 ### 5. Product Listing Flow
 
-Neonfold's shop page leads with:
+Kashmiri Jewels's shop page leads with:
 
 - Big editorial title and description.
 - Horizontal category navigation.
@@ -159,7 +159,7 @@ The current structure is usable, but it feels like a filter interface first and 
 
 ### Hero-Specific Direction
 
-Do not use Neonfold's exact image-led split hero for Kashmiri Jewels. Replace the current multi-image hero
+Do not use Kashmiri Jewels's exact image-led split hero for Kashmiri Jewels. Replace the current multi-image hero
 with a simple banner-based hero:
 
 - One full-width banner area.
@@ -171,7 +171,7 @@ with a simple banner-based hero:
   - Kashmiri Jewels / campaign headline.
   - Short supporting copy.
   - Shop action.
-- After the hero, keep the rest of the homepage structure close to Neonfold's section system:
+- After the hero, keep the rest of the homepage structure close to Kashmiri Jewels's section system:
   - Bordered value strip.
   - Editorial section headers.
   - Image-led category/story sections.
@@ -196,16 +196,16 @@ Work:
   - `--color-line-strong`: soft silver
   - `--color-blush`: dusty blush
 - Replace the old helper-class typography with Tailwind `font-serif` / `font-sans` utilities backed
-  by the Neonfold font files.
+  by the Kashmiri Jewels font files.
 - Keep layout changes in component class names and Tailwind theme tokens only; do not introduce
   `@apply` utilities.
-- Reduce default button roundness for primary and secondary fashion buttons.
-- Convert header to a Neonfold-style structure:
+- Reduce default button roundness for primary and secondary Jewellery buttons.
+- Convert header to a Kashmiri Jewels-style structure:
   - Announcement strip.
   - Centered brand.
   - Desktop navigation left.
   - Actions right.
-  - Fixed or sticky behavior to be decided after visual QA. Fixed matches Neonfold, sticky is less
+  - Fixed or sticky behavior to be decided after visual QA. Fixed matches Kashmiri Jewels, sticky is less
     risky for Kashmiri Jewels' current route structure.
 
 Risk:
@@ -233,7 +233,7 @@ Work:
   - Short copy.
   - Primary and secondary CTA.
   - No stacked/staggered product-image layout.
-- Move the hero trust signals into a bordered value strip below the hero, similar to Neonfold.
+- Move the hero trust signals into a bordered value strip below the hero, similar to Kashmiri Jewels.
 - Convert "Shop by style" into a tighter three-tile editorial row with minimal overlays.
 - Replace repeated card-like sections with bordered full-width bands.
 - Turn `HomeImageStory` into a fit/story section:
@@ -241,7 +241,7 @@ Work:
   - One large heading.
   - Short copy.
   - One clear action.
-- Keep best sellers and new arrivals, but format headers like Neonfold:
+- Keep best sellers and new arrivals, but format headers like Kashmiri Jewels:
   - Large serif heading.
   - Description.
   - Underlined text link.
@@ -267,7 +267,7 @@ Work:
 - Move collection title and description into a larger editorial intro.
 - Add horizontal category navigation above the grid.
 - Keep desktop filters persistent and visually quiet instead of toggle-driven.
-- Keep mobile filters as a drawer, but align drawer styling with Neonfold: left-side, square-edged,
+- Keep mobile filters as a drawer, but align drawer styling with Kashmiri Jewels: left-side, square-edged,
   bordered panel.
 - Update active filter chips from rounded pills to bordered rectangular chips.
 - Change grid to:
@@ -302,7 +302,7 @@ Work:
   - Bordered sections instead of cards.
   - Square gallery thumbnails and viewer controls.
   - Remove rounded badges where possible.
-- Align the assurance block with Neonfold's three-item row.
+- Align the assurance block with Kashmiri Jewels's three-item row.
 - Make related products use the same updated `ProductCard`.
 - Keep Kashmiri Jewels' size chart and fit-confidence helper, but present them in flatter bordered rows.
 
@@ -339,7 +339,7 @@ Risk:
 
 - The Kashmiri Jewels palette remains unchanged.
 - Homepage first viewport has one clear banner-led campaign story.
-- Header feels premium and aligned with Neonfold's structure.
+- Header feels premium and aligned with Kashmiri Jewels's structure.
 - Product listing reads as a collection page before it reads as a filter tool.
 - Product cards are image-led, consistent, and less chrome-heavy.
 - Mobile layout has no text overlap, horizontal overflow, or hidden critical actions.

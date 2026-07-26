@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       }).meta,
       {
         name: 'theme-color',
-        content: '#1C2E4A',
+        content: '#073D31',
       },
       {
         name: 'application-name',
@@ -46,14 +46,14 @@ export const Route = createRootRoute({
       },
       {
         rel: 'preload',
-        href: '/assets/fonts/neonfold/geist-latin.woff2',
+        href: '/assets/fonts/kashmiri-jewels/geist-latin.woff2',
         as: 'font',
         type: 'font/woff2',
         crossOrigin: 'anonymous',
       },
       {
         rel: 'preload',
-        href: '/assets/fonts/neonfold/instrument-serif-latin.woff2',
+        href: '/assets/fonts/kashmiri-jewels/instrument-serif-latin.woff2',
         as: 'font',
         type: 'font/woff2',
         crossOrigin: 'anonymous',
@@ -81,7 +81,7 @@ export const Route = createRootRoute({
       {
         rel: 'mask-icon',
         href: '/safari-pinned-tab.svg',
-        color: '#1C2E4A',
+        color: '#073D31',
       },
       {
         rel: 'manifest',

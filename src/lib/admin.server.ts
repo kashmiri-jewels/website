@@ -815,7 +815,7 @@ function drawInvoiceHeader(context: InvoicePdfContext, invoice: InvoiceData) {
     color: rgb(0.12, 0.11, 0.09),
   })
   context.y -= 24
-  drawText(context, 'Studio fashion order invoice', 48, context.y, {
+  drawText(context, 'Kashmiri Jewels order invoice', 48, context.y, {
     size: 9,
     color: rgb(0.45, 0.42, 0.36),
   })

@@ -65,7 +65,7 @@ export function CartDrawer() {
                     Your bag is empty
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-                    Choose a style and size to begin your order.
+                    Choose a piece and size to begin your order.
                   </p>
                   <Button
                     nativeButton={false}

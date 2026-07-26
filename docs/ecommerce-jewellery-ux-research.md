@@ -1,12 +1,12 @@
-# Ecommerce Fashion UX Research Brief
+# Ecommerce Jewellery UX Research Brief
 
 Research date: 2026-05-11
 
-Scope: fashion ecommerce storefront UX for Kashmiri Jewels, with emphasis on product discovery, product cards, product detail pages, cart/checkout, mobile usability, trust, accessibility, and performance.
+Scope: jewellery ecommerce storefront UX for Kashmiri Jewels, with emphasis on product discovery, product cards, product detail pages, cart/checkout, mobile usability, trust, accessibility, and performance.
 
 ## Executive Summary
 
-The strongest pattern across the research is not "make it prettier"; it is "make product evaluation easier, faster, and more trustworthy." For fashion, shoppers need to understand fit, fabric, drape, color, sizing, return risk, and delivery before they feel safe buying. Visual polish matters, but only when it supports those decisions.
+The strongest pattern across the research is not "make it prettier"; it is "make product evaluation easier, faster, and more trustworthy." For Jewellery, shoppers need to understand fit, fabric, drape, color, sizing, return risk, and delivery before they feel safe buying. Visual polish matters, but only when it supports those decisions.
 
 For Kashmiri Jewels, the biggest opportunities are:
 
@@ -39,7 +39,7 @@ Avoid:
 
 ### 2. Product Cards Should Help Users Decide, Not Just Click
 
-Baymard's mobile product-list examples emphasize that users need enough product information in lists to avoid needless product page visits, while mobile space makes comparison harder. For fashion, the card needs to show whether the item is worth opening: image, title, price, discount, available sizes, stock/sale cue, and a quick add path when size can be selected safely.
+Baymard's mobile product-list examples emphasize that users need enough product information in lists to avoid needless product page visits, while mobile space makes comparison harder. For Jewellery, the card needs to show whether the item is worth opening: image, title, price, discount, available sizes, stock/sale cue, and a quick add path when size can be selected safely.
 
 Must implement:
 
@@ -135,7 +135,7 @@ Avoid:
 
 ### 7. Performance Is UX
 
-Shopify warns that flashy elements often hurt conversion when they slow or confuse the experience. web.dev's Core Web Vitals and image guidance are directly relevant for fashion ecommerce because product imagery is the largest asset class. Product images should be high quality, but responsive, dimensioned, and lazy-loaded correctly.
+Shopify warns that flashy elements often hurt conversion when they slow or confuse the experience. web.dev's Core Web Vitals and image guidance are directly relevant for jewellery ecommerce because product imagery is the largest asset class. Product images should be high quality, but responsive, dimensioned, and lazy-loaded correctly.
 
 Must implement:
 
@@ -151,9 +151,9 @@ Avoid:
 - Lazy-loading the hero/LCP image.
 - Adding conversion widgets that block interactivity.
 
-### 8. Visual Design Should Signal Fashion Quality Without Blocking Shopping
+### 8. Visual Design Should Signal Jewellery Quality Without Blocking Shopping
 
-NN/g's visual design principles reinforce hierarchy, contrast, balance, and Gestalt grouping. In ecommerce fashion, visual elegance should come from restraint: real product imagery, strong spacing rhythm, consistent image crops, high-quality typography, and useful microcopy.
+NN/g's visual design principles reinforce hierarchy, contrast, balance, and Gestalt grouping. In ecommerce Jewellery, visual elegance should come from restraint: real product imagery, strong spacing rhythm, consistent image crops, high-quality typography, and useful microcopy.
 
 Must implement:
 
@@ -206,7 +206,7 @@ Avoid:
    - Useful for comparison-heavy browsing and pogo-sticking between PLP and PDP.
 
 3. Save for later / wishlist
-   - Useful for fashion shoppers comparing pieces across sessions.
+   - Useful for Jewellery shoppers comparing pieces across sessions.
 
 4. Real review collection system
    - Start collecting post-purchase reviews; display only verified real reviews.
@@ -251,7 +251,7 @@ Already moving in the right direction:
 
 Key gaps:
 
-- Catalog has too little structured product data for strong fashion filtering.
+- Catalog has too little structured product data for strong Jewellery filtering.
 - Most products currently have too few image views for apparel confidence.
 - Search is not yet prominent enough for high-intent users.
 - Mobile filtering should become a drawer, not a long inline panel.

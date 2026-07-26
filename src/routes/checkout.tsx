@@ -238,8 +238,8 @@ function CheckoutPage() {
         customerEmail: normalizedForm.email,
       },
       theme: {
-        color: '#1C2E4A',
-        backdrop_color: '#1C2E4A',
+        color: '#073D31',
+        backdrop_color: '#073D31',
       },
       modal: {
         backdropclose: false,
@@ -319,7 +319,7 @@ function CheckoutPage() {
               Your bag is empty
             </h1>
             <p className="mt-4 text-sm leading-6 text-[var(--color-muted)]">
-              Choose a style and size to begin your order.
+              Choose a piece and size to begin your order.
             </p>
             <Button
               nativeButton={false}
