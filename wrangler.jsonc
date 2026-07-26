@@ -8,7 +8,7 @@
     "enabled": true
   },
   "vars": {
-    "ADMIN_EMAILS": "hello.kashmirijewels@gmail.com,anshul.bansal950@gmail.com",
+    "ADMIN_EMAILS": "hello.kashmirijewels@gmail.com",
     "GITHUB_REPOSITORY": "kashmiri-jewels/website",
     "CATALOG_PUBLISH_WORKFLOW_FILE": "publish-catalog.yml",
     "CATALOG_PUBLISH_QA_REF": "dev",
@@ -17,7 +17,7 @@
   "env": {
     "qa": {
       "vars": {
-        "ADMIN_EMAILS": "hello.kashmirijewels@gmail.com,anshul.bansal950@gmail.com",
+        "ADMIN_EMAILS": "hello.kashmirijewels@gmail.com",
         "CF_ACCESS_TEAM_DOMAIN": "kashmirijewels.cloudflareaccess.com",
         "CF_ACCESS_AUD": "570c21605430ef34f5ffb875618ac603edea22f5f80132a0453635bf71323afb",
         "GITHUB_REPOSITORY": "kashmiri-jewels/website",
