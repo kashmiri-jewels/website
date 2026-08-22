@@ -19,7 +19,6 @@ import type {
 import {
   formatAdminDateTime,
   type AdminActionStatus,
-  type AdminPublishEnvironment,
   type AdminViewKey,
 } from '../lib/admin-ui'
 
@@ -190,8 +189,6 @@ function AdminDashboardPage({ dashboard }: { dashboard: AdminDashboard }) {
   const [orderNumber, setOrderNumber] = useState('')
   const [retryStatus, setRetryStatus] = useState<AdminActionStatus>('idle')
   const [retryMessage, setRetryMessage] = useState('')
-  const [publishEnvironment, setPublishEnvironment] = useState<AdminPublishEnvironment>('qa')
-  const [publishConfirmation, setPublishConfirmation] = useState('')
   const [publishStatus, setPublishStatus] = useState<AdminActionStatus>('idle')
   const [publishMessage, setPublishMessage] = useState('')
   const [publishRuns, setPublishRuns] = useState<CatalogPublishRun[]>([])
@@ -235,26 +232,19 @@ function AdminDashboardPage({ dashboard }: { dashboard: AdminDashboard }) {
   async function submitPublishCatalog(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (publishEnvironment === 'prod' && publishConfirmation.trim().toUpperCase() !== 'PUBLISH PROD') {
-      setPublishStatus('error')
-      setPublishMessage('Type PUBLISH PROD before publishing production.')
-      return
-    }
-
     setPublishStatus('loading')
-    setPublishMessage(`Dispatching ${publishEnvironment.toUpperCase()} catalog publish...`)
+    setPublishMessage('Updating website products...')
 
     try {
-      const result = await dispatchCatalogPublish({ data: { environment: publishEnvironment } })
+      const result = await dispatchCatalogPublish({ data: { environment: 'prod' } })
       setPublishStatus('success')
       setPublishMessage(
-        `Catalog publish dispatched for ${result.environment.toUpperCase()} from ${result.ref}.`,
+        'Product update started. Please wait 1-2 minutes, then refresh the website.',
       )
-      setPublishConfirmation('')
       await refreshPublishStatus()
     } catch (error) {
       setPublishStatus('error')
-      setPublishMessage(error instanceof Error ? error.message : 'Unable to publish catalog')
+      setPublishMessage(error instanceof Error ? error.message : 'Unable to update website products')
     }
   }
 
@@ -302,13 +292,9 @@ function AdminDashboardPage({ dashboard }: { dashboard: AdminDashboard }) {
           </div>
 
           <AdminActionPanel
-            publishEnvironment={publishEnvironment}
-            publishConfirmation={publishConfirmation}
             publishStatus={publishStatus}
             publishMessage={publishMessage}
             publishRuns={publishRuns}
-            onPublishEnvironmentChange={setPublishEnvironment}
-            onPublishConfirmationChange={setPublishConfirmation}
             onPublishSubmit={submitPublishCatalog}
             onRefreshPublishStatus={refreshPublishStatus}
             orderNumber={orderNumber}

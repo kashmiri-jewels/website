@@ -14,17 +14,12 @@ import {
   formatAdminDateTime,
   formatCatalogPublishRunStatus,
   type AdminActionStatus,
-  type AdminPublishEnvironment,
 } from '../../lib/admin-ui'
 
 type AdminActionPanelProps = {
-  publishEnvironment: AdminPublishEnvironment
-  publishConfirmation: string
   publishStatus: AdminActionStatus
   publishMessage: string
   publishRuns: CatalogPublishRun[]
-  onPublishEnvironmentChange: (environment: AdminPublishEnvironment) => void
-  onPublishConfirmationChange: (confirmation: string) => void
   onPublishSubmit: (event: FormEvent<HTMLFormElement>) => void
   onRefreshPublishStatus: () => void
   orderNumber: string
@@ -35,13 +30,9 @@ type AdminActionPanelProps = {
 }
 
 export function AdminActionPanel({
-  publishEnvironment,
-  publishConfirmation,
   publishStatus,
   publishMessage,
   publishRuns,
-  onPublishEnvironmentChange,
-  onPublishConfirmationChange,
   onPublishSubmit,
   onRefreshPublishStatus,
   orderNumber,
@@ -62,47 +53,14 @@ export function AdminActionPanel({
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-medium text-[var(--color-ink)]">
-              Publish catalog
+              Update website products
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">
-              Runs the GitHub Actions catalog publish workflow for products, images, build, and
-              deployment.
+              Click this after changing the Google Sheet. It updates products, prices, stock, and
+              images on the live website.
             </p>
           </div>
         </div>
-
-        <fieldset className="mt-5">
-          <legend className="text-sm font-medium text-[var(--color-ink)]">
-            Target
-          </legend>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(['qa', 'prod'] as const).map((environment) => (
-              <button
-                key={environment}
-                type="button"
-                onClick={() => onPublishEnvironmentChange(environment)}
-                className={`h-10 border px-3 text-sm font-medium uppercase transition duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 ${
-                  publishEnvironment === environment
-                    ? 'border-[var(--color-ink)] bg-[var(--color-ink)] text-[var(--color-paper)]'
-                    : 'border-[var(--color-line)] bg-[var(--color-paper)] text-[var(--color-muted)] hover:text-[var(--color-ink)]'
-                }`}
-              >
-                {environment}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        {publishEnvironment === 'prod' ? (
-          <label className="mt-4 block text-sm font-medium text-[var(--color-ink)]">
-            Type PUBLISH PROD
-            <input
-              value={publishConfirmation}
-              onChange={(event) => onPublishConfirmationChange(event.target.value)}
-              className="mt-2 h-11 w-full border border-[var(--color-line)] bg-[var(--color-paper)] px-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
-            />
-          </label>
-        ) : null}
 
         <Button
           type="submit"
@@ -114,7 +72,7 @@ export function AdminActionPanel({
           ) : (
             <Rocket className="size-4" aria-hidden="true" />
           )}
-          Publish catalog
+          Update website products
         </Button>
 
         <Button
@@ -124,7 +82,7 @@ export function AdminActionPanel({
           className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 border border-[var(--color-line)] bg-[var(--color-paper)] px-4 text-sm font-medium text-[var(--color-ink)] transition duration-150 ease-out hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500 disabled:active:scale-100"
         >
           <RefreshCw className="size-4" aria-hidden="true" />
-          Refresh publish status
+          Check update status
         </Button>
 
         {publishMessage ? (
