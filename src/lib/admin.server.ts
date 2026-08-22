@@ -12,6 +12,7 @@ import {
 
 const adminViewLimit = 50
 const recentOrdersLimit = 25
+const productionSupabaseUrl = 'https://afsiomfcjayytqeqfojj.supabase.co'
 
 const accessJwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>()
 
@@ -1331,7 +1332,7 @@ function readDelhiveryCancelError(payload: unknown): string | null {
 
 function readAdminEnv(): AdminEnv {
   const adminEmails = parseAdminEmails(readEnv('ADMIN_EMAILS'))
-  const supabaseUrl = requireEnv('SUPABASE_URL', 'VITE_SUPABASE_URL')
+  const supabaseUrl = readEnv('SUPABASE_URL') || readEnv('VITE_SUPABASE_URL') || productionSupabaseUrl
   const supabaseServiceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY', 'OPS_SERVICE_ROLE_KEY')
   const opsServiceRoleKey = readEnv('OPS_SERVICE_ROLE_KEY') || supabaseServiceRoleKey
 
