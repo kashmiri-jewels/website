@@ -21,7 +21,7 @@ jobs:
       cancel-in-progress: false
     env:
       TARGET_ENVIRONMENT: ${{ inputs.environment }}
-      PRODUCTS_CSV_URL: ${{ vars.PRODUCTS_CSV_URL }}
+      PRODUCTS_CSV_URL: ${{ vars.PRODUCTS_CSV_URL || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFFLNGsXi5yKDodXA9fr7FTcsPMfAS1xIzjTPYVmSZsf99Mvx_LG9Of-2_k0b7GhCiryqDb3GK3UOQ/pub?output=csv' }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       EXPECTED_SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
