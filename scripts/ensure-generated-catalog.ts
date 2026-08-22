@@ -23,10 +23,10 @@ for (const file of generatedFiles) {
   }
 }
 
-if (process.env.GOOGLE_SHEETS_SPREADSHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+if (process.env.PRODUCTS_CSV_URL || (process.env.GOOGLE_SHEETS_SPREADSHEET_ID && process.env.GOOGLE_SERVICE_ACCOUNT_JSON)) {
   await run('tsx', ['scripts/sync-products.ts'])
 } else {
-  console.log('Product catalog sync skipped: missing Google Sheets ID or service account JSON.')
+  console.log('Product catalog sync skipped: missing PRODUCTS_CSV_URL or Google Sheets credentials.')
 }
 
 function run(command: string, args: string[]) {

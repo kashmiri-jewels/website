@@ -119,9 +119,16 @@ async function loadRows() {
   const localPath = process.env.PRODUCTS_CSV_PATH
   if (localPath) return sheetRowsFromValues(parseCsv(await readFile(localPath, 'utf8')), requiredColumns, localPath)
 
+  const csvUrl = process.env.PRODUCTS_CSV_URL
+  if (csvUrl) {
+    const response = await fetch(csvUrl)
+    if (!response.ok) throw new Error(`Unable to read PRODUCTS_CSV_URL: ${response.status} ${response.statusText}`)
+    return sheetRowsFromValues(parseCsv(await response.text()), requiredColumns, 'PRODUCTS_CSV_URL')
+  }
+
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
   if (!spreadsheetId) {
-    throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID is required unless PRODUCTS_CSV_PATH is set')
+    throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID is required unless PRODUCTS_CSV_URL or PRODUCTS_CSV_PATH is set')
   }
 
   const auth = new google.auth.GoogleAuth({

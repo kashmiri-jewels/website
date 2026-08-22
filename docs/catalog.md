@@ -66,7 +66,14 @@ weight_kg
 
 ## Publishing
 
-The Cloudflare build automatically reads Google Sheets when these build variables are configured:
+Fastest production setup: publish the Google Sheet tab as CSV and set this Cloudflare build
+variable:
+
+```text
+PRODUCTS_CSV_URL
+```
+
+Private service-account setup is also supported when these build variables are configured:
 
 ```text
 GOOGLE_SHEETS_SPREADSHEET_ID
