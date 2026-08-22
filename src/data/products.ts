@@ -1,4 +1,5 @@
 import generatedProducts from '../generated/products.json'
+import { fallbackProducts } from './fallback-products'
 import type { Product } from './product-schema'
 
 export type {
@@ -9,7 +10,9 @@ export type {
   SizeChartRow,
 } from './product-schema'
 
-export const products = generatedProducts as unknown as Product[]
+const syncedProducts = generatedProducts as unknown as Product[]
+
+export const products = syncedProducts.length > 0 ? syncedProducts : fallbackProducts
 
 export const productCategories = Array.from(
   new Set(products.map((product) => product.category)),
