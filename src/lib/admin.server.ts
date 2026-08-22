@@ -1331,8 +1331,8 @@ function readDelhiveryCancelError(payload: unknown): string | null {
 
 function readAdminEnv(): AdminEnv {
   const adminEmails = parseAdminEmails(readEnv('ADMIN_EMAILS'))
-  const supabaseUrl = requireEnv('SUPABASE_URL')
-  const supabaseServiceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+  const supabaseUrl = requireEnv('SUPABASE_URL', 'VITE_SUPABASE_URL')
+  const supabaseServiceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY', 'OPS_SERVICE_ROLE_KEY')
   const opsServiceRoleKey = readEnv('OPS_SERVICE_ROLE_KEY') || supabaseServiceRoleKey
 
   return {
@@ -1360,10 +1360,14 @@ function readEnv(name: string) {
   return workerEnv[name] || nodeEnv
 }
 
-function requireEnv(name: string) {
-  const value = readEnv(name)
+function requireEnv(name: string, fallbackName?: string) {
+  const value = readEnv(name) || (fallbackName ? readEnv(fallbackName) : undefined)
   if (!value) {
-    throw new AdminError(`${name} is not configured`, 503, true)
+    const message = fallbackName
+      ? `${name} or ${fallbackName} is not configured`
+      : `${name} is not configured`
+
+    throw new AdminError(message, 503, true)
   }
 
   return value
