@@ -107,20 +107,16 @@
       "title": "Kashmiri Jewels - Heritage Handcrafted Jewellery",
       "description": "Discover Kashmiri Jewels, a heritage-inspired jewellery label with handcrafted pieces for everyday elegance and celebrations.",
       "image": {
-        "url": "/banners/40.jpg",
-        "alt": "Kashmiri Jewels collection"
+        "url": "/assets/hero/kashmiri-jewels-featured-jewellery-hero.webp",
+        "alt": "Gold handcrafted Kashmiri jewellery on emerald fabric"
       }
     },
     "hero": {
       "screenReaderTitle": "Kashmiri Jewels — latest collection",
       "slides": [
         {
-          "url": "/banners/40.jpg",
-          "alt": "Kashmiri Jewels collection — style 1"
-        },
-        {
-          "url": "/banners/37.jpg",
-          "alt": "Kashmiri Jewels collection — style 2"
+          "url": "/assets/hero/kashmiri-jewels-featured-jewellery-hero.webp",
+          "alt": "Handcrafted gold Kashmiri earrings, bangles, and pendant with emerald accents"
         }
       ],
       "primaryCta": {
