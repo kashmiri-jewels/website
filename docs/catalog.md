@@ -1,8 +1,8 @@
 # Product Catalog
 
-Products are managed by the shop owner in Google Sheets. Product images are managed in Google
-Drive folders. The storefront catalog is published through the `Publish catalog` GitHub Actions
-workflow or through the `/admin` page action that dispatches that workflow.
+Products are managed by the shop owner in Google Sheets. The urgent production setup uses one
+simple tab named `Products`, with image links pasted directly into the `images` column. R2 image
+optimization can still be added later.
 
 Do not edit generated catalog files by hand. The repository does not track generated product data,
 catalog sync payloads, image manifests, owner spreadsheets, or product images. Real catalog files
@@ -16,18 +16,7 @@ Catalog data:
 Google Sheets -> Products tab
 ```
 
-Product images:
-
-```text
-Google Drive root folder
-  product_id/
-    01-front.jpg
-    02-close.jpg
-    03-side.jpg
-```
-
-The Google Drive root folder ID is environment-specific and belongs in GitHub environment variable
-`GOOGLE_DRIVE_IMAGE_FOLDER_ID`.
+Product images can be Google Drive file share links, Cloudflare R2 URLs, or any public image URL.
 
 ## Required Sheet Columns
 
@@ -42,7 +31,6 @@ selling_price
 images
 sizes
 stock
-restock
 size_chart
 featured
 ```
@@ -51,49 +39,42 @@ Column notes:
 
 - `product_id`: stable owner-managed product ID. It must not change after publishing.
 - `active`: `yes`, `true`, or `1` makes the product visible and purchasable when stock allows it.
-- `images`: optional for the normal workflow. Leave it blank to use the matching Google Drive
-  product folder. Fill it only when a product needs explicit image ordering by filename.
-- `sizes`: comma-separated sizes, such as `S, M, L, XL`.
-- `stock`: stock map, such as `S:2, M:4, L:1`.
-- `restock`: exact replacement stock map for existing variants, such as `M:8`.
+- `images`: one or more image links. Use commas, pipes, or new lines for multiple images.
+- `sizes`: comma-separated sizes, such as `One Size` or `S, M, L, XL`.
+- `stock`: either one number such as `5`, or a stock map such as `S:2, M:4, L:1`.
 - `size_chart`: semicolon-separated rows such as
   `M: Bust=38 in, Length=27 in; L: Bust=40 in, Length=28 in`.
 - `featured`: `yes`, `true`, or `1` marks the product for homepage merchandising.
 
-## Image Rules
+Optional helpful columns:
 
-- Product image folder name must exactly match `product_id`.
-- Active products must have at least one supported image.
-- Supported extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`.
-- Filename order controls gallery order. Prefer `01-front.jpg`, `02-close.jpg`, and so on.
-- Files without a supported image extension are ignored with a workflow warning.
-- Active products without supported images are skipped with a workflow warning.
-- Image sync computes a content hash and uploads only missing optimized WebP variants to Cloudflare R2.
-- Generated storefront images include `400w`, `800w`, and `1200w` variants for responsive loading.
-- Storefront image URLs are generated from the environment's `PRODUCT_IMAGE_PUBLIC_BASE_URL`.
+```text
+variant_id
+sku
+brand
+color
+material
+occasion
+hsn
+tax_code
+min_order_quantity
+length_cm
+breadth_cm
+height_cm
+weight_kg
+```
 
 ## Publishing
 
-Use one action for owner catalog updates:
+The Cloudflare build automatically reads Google Sheets when these build variables are configured:
 
 ```text
-Publish catalog
+GOOGLE_SHEETS_SPREADSHEET_ID
+GOOGLE_SERVICE_ACCOUNT_JSON
+GOOGLE_SHEETS_RANGE=Products!A1:Z
 ```
 
-It performs:
-
-```text
-read Google Sheets
-read Google Drive images
-generate catalog JSON
-validate generated image URLs against the configured media host
-upload new/changed images to R2
-sync Supabase products and variants
-build/prerender public storefront pages
-deploy through Cloudflare Workers
-```
-
-This is push-based. There is no scheduled sync and no interval-based regeneration.
+After editing the sheet, use Cloudflare `Deployments -> Retry build`.
 
 ## Developer Commands
 
@@ -101,20 +82,14 @@ These commands are for validation and CI/CD jobs. They are not local deployment 
 
 ```bash
 pnpm prepare:generated
-pnpm sync:images:manifest
-pnpm sync:images:r2
-pnpm sync:images:r2:upload
 pnpm sync:products
-pnpm validate:catalog-assets
-pnpm publish:catalog
 ```
 
 `pnpm prepare:generated` only creates local empty generated files when missing so non-publish
 typecheck/build jobs can run. It does not add catalog data to Git and does not overwrite real
 generated catalog files created by publish.
 
-`pnpm publish:catalog` requires environment-specific Google, R2, Supabase, and Cloudflare
-configuration. It should normally run inside GitHub Actions.
+Use `docs/product-catalog-template.csv` as the quickest template for the Google Sheet columns.
 
 ## More Detail
 

@@ -3,25 +3,14 @@ import path from 'node:path'
 
 import { google } from 'googleapis'
 
-import {
-  productCatalogSchema,
-  type Product,
-  type ProductAttribute,
-} from '../src/data/product-schema'
+import { productCatalogSchema, type Product, type ProductAttribute } from '../src/data/product-schema'
 import {
   readProductImageManifest,
   resolveProductImagesFromManifest,
   type ImageManifest,
-  type ResolvedProductImage,
 } from './lib/product-image-manifest'
 import { getGoogleServiceAccountCredentials, loadEnvFile, projectRoot } from './lib/runtime'
-import {
-  parseBoolean,
-  pick,
-  pickOptional,
-  sheetRowsFromValues,
-  type SheetRow,
-} from './lib/sheet-rows'
+import { parseBoolean, pick, pickOptional, sheetRowsFromValues, splitList, type SheetRow } from './lib/sheet-rows'
 
 type SlugManifest = Record<string, string>
 
@@ -62,88 +51,51 @@ type ProductSyncRecord = {
   }>
 }
 
-type StockRecord = {
-  title: string
-  sizes: Map<string, number>
-}
-
 const slugsPath = path.join(projectRoot, 'scripts/product-slugs.json')
 const outputPath = path.join(projectRoot, 'src/generated/products.json')
 const syncOutputPath = path.join(projectRoot, 'src/generated/products-sync.json')
+const defaultRange = 'Products!A1:Z'
+const requiredColumns = ['product_id', 'active', 'title', 'category', 'description', 'mrp', 'selling_price']
+const internalColumns = new Set(
+  [
+    'product_id',
+    'variant_id',
+    'active',
+    'title',
+    'category',
+    'description',
+    'mrp',
+    'selling_price',
+    'images',
+    'sizes',
+    'stock',
+    'size_chart',
+    'featured',
+    'sku',
+    'product_code',
+    'tag',
+    'brand',
+    'color',
+    'hsn',
+    'tax_code',
+    'min_order_quantity',
+    'length_cm',
+    'breadth_cm',
+    'height_cm',
+    'weight_kg',
+  ].map(normalizeHeaderKey),
+)
 
-const defaultDetailRanges = [
-  "'Product Details - Kurti'!A1:BN",
-  "'Product Details - Coord set'!A1:BN",
-]
-const defaultStockRange = "'Stock Sheet'!A1:Q"
-const stockSizeColumns = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL']
-const detailRequiredColumns = [
-  'Seller SKU ID',
-  'Group ID',
-  'Variant ID',
-  'Listing Status',
-  'MRP (INR)',
-  'Your selling price (INR)',
-  'Minimum Order Quantity (MinOQ)',
-  'Brand',
-  'Product Code',
-  'Product Type',
-  'Main Image URL',
-]
-const stockRequiredColumns = ['Variant ID', ...stockSizeColumns]
-const internalAttributeColumns = new Set([
-  'S.no',
-  'Seller SKU ID',
-  'Group ID',
-  'Variant ID',
-  'Listing Status',
-  'MRP (INR)',
-  'Your selling price (INR)',
-  'Tag',
-  'Fullfilment by (Seller)',
-  'Stock',
-  'Shipping provider',
-  'Length (CM)',
-  'Breadth (CM)',
-  'Height (CM)',
-  'Weight (KG)',
-  'HSN',
-  'Tax Code',
-  'Minimum Order Quantity (MinOQ)',
-  'Main Image URL',
-  'Other Image URL 1',
-  'Other Image URL 2',
-  'Other Image URL 3',
-  'Other Image URL 4',
-  'Other Image URL 5',
-  'Main Palette Image URL',
-].map(normalizeHeaderKey))
-const disclosureAttributeColumns = new Set([
-  'Product Code',
-  'Product Type',
-  'MRP (Inclusive of all taxes)',
-  'Net Quantity',
-  'Month and Year of Manufacture',
-  'Country Of Origin',
-  'Packed By',
-  'Marketed By',
-  'Customer Care details',
-].map(normalizeHeaderKey))
-
-let productImageManifestPath: string | undefined
 let imageManifest: ImageManifest | undefined
 
 async function main() {
   await loadEnvFile()
-  loadRuntimeConfig()
   imageManifest = await readImageManifest()
 
-  const { detailRows, stockByVariantId } = await loadRows()
-  assertUniqueVariantIds(detailRows)
+  const rows = await loadRows()
+  assertUniqueIds(rows)
   const slugs = await readSlugManifest()
-  const normalized = await Promise.all(
-    detailRows.map((row, index) => normalizeVariantProduct(row, index + 3, stockByVariantId, slugs)),
-  )
+  const normalized = rows.map((row, index) => normalizeProduct(row, index + 2, slugs))
   const products = productCatalogSchema.parse(
     normalized
       .map(({ product }) => product)
@@ -160,89 +112,244 @@ async function main() {
   await writeFile(syncOutputPath, `${JSON.stringify(syncRecords, null, 2)}\n`)
   await writeFile(slugsPath, `${JSON.stringify(slugs, null, 2)}\n`)
 
-  console.log(`Synced ${products.length} product variants to ${path.relative(projectRoot, outputPath)}`)
-}
-
-function loadRuntimeConfig() {
-  productImageManifestPath = process.env.PRODUCT_IMAGE_MANIFEST_PATH
-}
-
-async function readImageManifest() {
-  if (!productImageManifestPath) return undefined
-
-  const manifestPath = path.resolve(projectRoot, productImageManifestPath)
-  return readProductImageManifest(manifestPath, projectRoot)
+  console.log(`Synced ${products.length} products to ${path.relative(projectRoot, outputPath)}`)
 }
 
 async function loadRows() {
-  const localDetailPaths = process.env.PRODUCT_DETAIL_CSV_PATHS
-  const localStockPath = process.env.STOCK_CSV_PATH
-
-  if (localDetailPaths && localStockPath) {
-    return readLocalCsvRows(localDetailPaths, localStockPath)
-  }
+  const localPath = process.env.PRODUCTS_CSV_PATH
+  if (localPath) return sheetRowsFromValues(parseCsv(await readFile(localPath, 'utf8')), requiredColumns, localPath)
 
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-
   if (!spreadsheetId) {
-    throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID is required unless PRODUCT_DETAIL_CSV_PATHS and STOCK_CSV_PATH are set')
+    throw new Error('GOOGLE_SHEETS_SPREADSHEET_ID is required unless PRODUCTS_CSV_PATH is set')
   }
 
-  return readGoogleSheetRows(spreadsheetId)
-}
-
-async function readLocalCsvRows(detailPathsValue: string, stockPathValue: string) {
-  const detailPaths = detailPathsValue
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
-  const detailValues = await Promise.all(
-    detailPaths.map(async (csvPath) => parseCsv(await readFile(csvPath, 'utf8'))),
-  )
-  const stockValues = parseCsv(await readFile(stockPathValue, 'utf8'))
-
-  return {
-    detailRows: detailValues.flatMap((values, index) =>
-      productDetailRowsFromValues(values, detailPaths[index] ?? `detail CSV ${index + 1}`),
-    ),
-    stockByVariantId: stockRowsFromValues(stockValues, stockPathValue),
-  }
-}
-
-async function readGoogleSheetRows(spreadsheetId: string) {
   const auth = new google.auth.GoogleAuth({
     credentials: getGoogleServiceAccountCredentials(),
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   })
   const sheets = google.sheets({ version: 'v4', auth })
-  const detailRanges = (process.env.GOOGLE_SHEETS_PRODUCT_DETAIL_RANGES ?? defaultDetailRanges.join('|'))
-    .split('|')
-    .map((range) => range.trim())
-    .filter(Boolean)
-  const stockRange = process.env.GOOGLE_SHEETS_STOCK_RANGE ?? defaultStockRange
-  const response = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId,
-    ranges: [...detailRanges, stockRange],
-  })
-  const valueRanges = response.data.valueRanges ?? []
-  const detailRows = detailRanges.flatMap((range, index) => {
-    const values = valueRanges[index]?.values ?? []
-    return productDetailRowsFromValues(values, range)
-  })
-  const stockValues = valueRanges[detailRanges.length]?.values ?? []
+  const range = process.env.GOOGLE_SHEETS_RANGE || defaultRange
+  const response = await sheets.spreadsheets.values.get({ spreadsheetId, range })
+  return sheetRowsFromValues(response.data.values ?? [], requiredColumns, range)
+}
 
-  return {
-    detailRows,
-    stockByVariantId: stockRowsFromValues(stockValues, stockRange),
+async function readImageManifest() {
+  const manifestPath = process.env.PRODUCT_IMAGE_MANIFEST_PATH
+  if (!manifestPath) return undefined
+
+  try {
+    return await readProductImageManifest(path.resolve(projectRoot, manifestPath), projectRoot)
+  } catch {
+    return undefined
   }
 }
 
-function productDetailRowsFromValues(values: unknown[][], range: string) {
-  if (values.length < 3) {
-    throw new Error(`No product detail rows found in range ${range}`)
+function normalizeProduct(row: SheetRow, rowNumber: number, slugs: SlugManifest) {
+  const productId = pick(row, ['product_id'], rowNumber)
+  const variantId = pickOptional(row, ['variant_id']) || productId
+  const productCode = pickOptional(row, ['sku', 'product_code']) || productId
+  assertStableId(productId, 'product_id', rowNumber)
+  assertStableId(variantId, 'variant_id', rowNumber)
+
+  const active = parseBoolean(pick(row, ['active'], rowNumber))
+  const title = pick(row, ['title'], rowNumber)
+  const categoryLabel = pick(row, ['category'], rowNumber)
+  const category = slugify(categoryLabel)
+  const mrpPaise = parseMoneyToPaise(pick(row, ['mrp'], rowNumber), `MRP on row ${rowNumber}`)
+  const sellingPricePaise = parseMoneyToPaise(pick(row, ['selling_price'], rowNumber), `selling price on row ${rowNumber}`)
+  if (sellingPricePaise > mrpPaise) throw new Error(`selling_price cannot exceed mrp on row ${rowNumber}`)
+
+  const slugKey = `${productId}:${variantId}`
+  if (!slugs[slugKey]) slugs[slugKey] = createProductSlug(title, variantId)
+  const slug = slugs[slugKey]
+  if (!slug) throw new Error(`Unable to create slug for ${variantId}`)
+
+  const imageValue = pickOptional(row, ['images', 'main_image_url']) ?? ''
+  const resolvedImages = imageManifest
+    ? resolveProductImagesFromManifest({ active, imageManifest, productId: variantId, rowNumber, value: imageValue })
+    : []
+  const fallbackImages = splitList(imageValue).map(toDisplayImageUrl)
+  const images = resolvedImages.length > 0 ? resolvedImages.map((image) => image.publicUrl) : fallbackImages
+
+  if (active && images.length === 0) {
+    throw new Error(`Active product ${productId} on row ${rowNumber} must have at least one image`)
   }
 
-  return sheetRowsFromValues(values.slice(1), detailRequiredColumns, range)
+  const sizes = createSizes(variantId, row, rowNumber)
+  const attributes = createProductAttributes(row)
+  const description = pick(row, ['description'], rowNumber)
+  const featured = parseBoolean(pickOptional(row, ['featured', 'tag']) ?? '')
+
+  const product: Product | undefined = active
+    ? {
+        productId,
+        variantId,
+        productCode,
+        slug,
+        title,
+        images,
+        imageStoragePaths: resolvedImages.map((image) => image.storagePath),
+        imageVariants: resolvedImages.map((image) => image.variants),
+        mrpPaise,
+        sellingPricePaise,
+        discountPercent: deriveDiscountPercent(mrpPaise, sellingPricePaise),
+        sizes,
+        stockAvailable: sizes.reduce((total, size) => total + size.stockAvailable, 0),
+        description,
+        sizeChart: parseSizeChart(pickOptional(row, ['size_chart'])),
+        category,
+        categoryLabel,
+        imageAlt: title,
+        tag: normalizeOptional(pickOptional(row, ['tag'])),
+        brand: normalizeOptional(pickOptional(row, ['brand'])) ?? 'Kashmiri Jewels',
+        color: normalizeOptional(pickOptional(row, ['color'])),
+        minOrderQuantity: parseOptionalInteger(pickOptional(row, ['min_order_quantity']), 1, `min_order_quantity on row ${rowNumber}`),
+        attributes,
+        fulfillmentBy: undefined,
+        shippingProvider: undefined,
+        package: {
+          lengthCm: parseOptionalNumber(pickOptional(row, ['length_cm']), `length_cm on row ${rowNumber}`),
+          breadthCm: parseOptionalNumber(pickOptional(row, ['breadth_cm']), `breadth_cm on row ${rowNumber}`),
+          heightCm: parseOptionalNumber(pickOptional(row, ['height_cm']), `height_cm on row ${rowNumber}`),
+          weightKg: parseOptionalNumber(pickOptional(row, ['weight_kg']), `weight_kg on row ${rowNumber}`),
+        },
+        hsn: normalizeOptional(pickOptional(row, ['hsn'])),
+        taxCode: normalizeOptional(pickOptional(row, ['tax_code'])),
+        featured,
+        active,
+      }
+    : undefined
+
+  const syncVariant: ProductSyncRecord['variants'][number] | undefined = product
+    ? {
+        variantId,
+        productCode,
+        slug,
+        title,
+        color: product.color ?? null,
+        tag: product.tag ?? null,
+        brand: product.brand ?? null,
+        images,
+        mrpPaise,
+        sellingPricePaise,
+        sizeChart: product.sizeChart,
+        attributes,
+        minOrderQuantity: product.minOrderQuantity,
+        fulfillmentBy: null,
+        shippingProvider: null,
+        package: product.package,
+        hsn: product.hsn ?? null,
+        taxCode: product.taxCode ?? null,
+        active,
+        featured,
+        sizes: sizes.map((size) => ({
+          inventoryId: size.inventoryId,
+          sizeLabel: size.label,
+          stock: size.stockAvailable,
+          active: size.active,
+        })),
+      }
+    : undefined
+
+  return { product, syncVariant }
+}
+
+function createSizes(variantId: string, row: SheetRow, rowNumber: number): Product['sizes'] {
+  const sizes = splitList(pickOptional(row, ['sizes']) || 'One Size')
+  const stock = parseStock(pickOptional(row, ['stock']) || '1', sizes, rowNumber)
+
+  return sizes.map((label) => ({
+    inventoryId: createInventoryId(variantId, label),
+    label,
+    stockAvailable: stock.get(label) ?? 0,
+    active: true,
+  }))
+}
+
+function parseStock(value: string, sizes: string[], rowNumber: number) {
+  const result = new Map<string, number>()
+  const parts = splitList(value)
+
+  if (parts.length === 1 && !parts[0]?.includes(':')) {
+    const quantity = parseInteger(parts[0] || '0', `stock on row ${rowNumber}`)
+    sizes.forEach((size) => result.set(size, quantity))
+    return result
+  }
+
+  parts.forEach((part, index) => {
+    const [label, quantity] = part.includes(':') ? part.split(':') : [sizes[index], part]
+    if (!label) return
+    result.set(label.trim(), parseInteger(quantity ?? '0', `stock on row ${rowNumber}`))
+  })
+
+  sizes.forEach((size) => {
+    if (!result.has(size)) result.set(size, 0)
+  })
+
+  return result
+}
+
+function parseSizeChart(value: string | undefined): Product['sizeChart'] {
+  const normalized = normalizeOptional(value)
+  if (!normalized) return []
+
+  return normalized.split(';').flatMap((row) => {
+    const [size, measurementsValue] = row.split(':')
+    if (!size || !measurementsValue) return []
+
+    const measurements = Object.fromEntries(
+      measurementsValue
+        .split(',')
+        .map((measurement) => measurement.trim())
+        .filter(Boolean)
+        .flatMap((measurement) => {
+          const [label, value] = measurement.split('=')
+          return label && value ? [[label.trim(), value.trim()]] : []
+        }),
+    )
+
+    return Object.keys(measurements).length > 0 ? [{ size: size.trim(), measurements }] : []
+  })
+}
+
+function createProductAttributes(row: SheetRow): ProductAttribute[] {
+  return Object.entries(row)
+    .filter(([key]) => !internalColumns.has(key))
+    .flatMap(([key, value]) => {
+      const normalized = normalizeOptional(value)
+      return normalized
+        ? [{
+            label: humanizeHeaderKey(key),
+            section: 'details' as const,
+            value: normalized,
+          }]
+        : []
+    })
+}
+
+function createSyncRecords(entries: Array<{ product: Product; syncVariant: ProductSyncRecord['variants'][number] }>) {
+  const recordsByProductId = new Map<string, ProductSyncRecord>()
+
+  for (const { product, syncVariant } of entries) {
+    const existing = recordsByProductId.get(product.productId)
+    if (existing) {
+      existing.variants.push(syncVariant)
+      continue
+    }
+
+    recordsByProductId.set(product.productId, {
+      productId: product.productId,
+      slug: createProductSlug(product.productId, product.productId),
+      title: product.title,
+      category: product.category,
+      description: product.description,
+      active: true,
+      variants: [syncVariant],
+    })
+  }
+
+  return Array.from(recordsByProductId.values())
 }
 
 function parseCsv(content: string) {
@@ -292,36 +399,6 @@ function parseCsv(content: string) {
   return rows
 }
 
-function stockRowsFromValues(values: unknown[][], range: string) {
-  const rows = sheetRowsFromValues(values, stockRequiredColumns, range)
-  const stockByVariantId = new Map<string, StockRecord>()
-
-  rows.forEach((row, index) => {
-    const rowNumber = index + 2
-    const variantId = pickOptional(row, ['Variant ID'])
-    if (!variantId) return
-
-    if (stockByVariantId.has(variantId)) {
-      throw new Error(`Duplicate Variant ID "${variantId}" in stock sheet`)
-    }
-
-    const sizes = new Map<string, number>()
-    for (const size of stockSizeColumns) {
-      const rawValue = pickOptional(row, [size])
-      if (!rawValue) continue
-
-      sizes.set(size, parseInteger(rawValue, `${size} stock on row ${rowNumber}`))
-    }
-
-    stockByVariantId.set(variantId, {
-      title: pickOptional(row, ['Title']) ?? '',
-      sizes,
-    })
-  })
-
-  return stockByVariantId
-}
-
 async function readSlugManifest(): Promise<SlugManifest> {
   try {
     return JSON.parse(await readFile(slugsPath, 'utf8')) as SlugManifest
@@ -330,267 +407,26 @@ async function readSlugManifest(): Promise<SlugManifest> {
   }
 }
 
-async function normalizeVariantProduct(
-  row: SheetRow,
-  rowNumber: number,
-  stockByVariantId: Map<string, StockRecord>,
-  slugs: SlugManifest,
-) {
-  const productId = pick(row, ['Seller SKU ID'], rowNumber)
-  const variantId = pick(row, ['Variant ID'], rowNumber)
-  const productCode = pick(row, ['Product Code'], rowNumber)
-  assertStableId(productId, 'Seller SKU ID', rowNumber)
-  assertStableId(variantId, 'Variant ID', rowNumber)
-  assertStableId(productCode, 'Product Code', rowNumber)
+function assertUniqueIds(rows: SheetRow[]) {
+  const seen = new Set<string>()
 
-  const active = parseBoolean(pick(row, ['Listing Status'], rowNumber))
-  const stock = stockByVariantId.get(variantId)
-  if (!stock) throw new Error(`Missing stock sheet row for Variant ID "${variantId}"`)
-
-  const categoryLabel = pick(row, ['Group ID'], rowNumber)
-  const category = slugify(categoryLabel)
-  const title = createDisplayTitle(stock.title || productCode, row)
-  const mrpPaise = parseMoneyToPaise(pick(row, ['MRP (INR)', 'MRP'], rowNumber), `MRP on row ${rowNumber}`)
-  const sellingPricePaise = parseMoneyToPaise(
-    pick(row, ['Your selling price (INR)', 'selling_price'], rowNumber),
-    `selling price on row ${rowNumber}`,
-  )
-  if (sellingPricePaise > mrpPaise) {
-    throw new Error(`selling price cannot exceed MRP on row ${rowNumber}`)
-  }
-
-  const slugKey = `${productId}:${variantId}`
-  if (!slugs[slugKey]) slugs[slugKey] = createProductSlug(title, variantId)
-  const slug = slugs[slugKey]
-  if (!slug) throw new Error(`Unable to create slug for ${variantId}`)
-
-  const resolvedImages = await resolveProductImages(
-    variantId,
-    collectImageUrls(row).join('|'),
-    rowNumber,
-    active,
-  )
-  const imageStoragePaths = resolvedImages.map((image) => image.storagePath)
-  const publicImages = resolvedImages.map((image) => image.publicUrl)
-  const imageVariants = resolvedImages.map((image) => image.variants)
-  const fallbackImages = collectImageUrls(row)
-  const images = publicImages.length > 0 ? publicImages : fallbackImages
-
-  if (active && images.length === 0) {
-    throw new Error(`Active variant ${variantId} on row ${rowNumber} must have at least one image`)
-  }
-
-  for (const { storagePath: imagePath } of resolvedImages) assertSafeStoragePath(imagePath, rowNumber)
-
-  const sizes = Array.from(stock.sizes.entries()).map(([label, quantity]) => ({
-    inventoryId: createInventoryId(variantId, label),
-    label,
-    stockAvailable: quantity,
-    active: true,
-  }))
-  if (sizes.length === 0) {
-    throw new Error(`Variant ${variantId} has no size stock in the stock sheet`)
-  }
-
-  const attributes = createProductAttributes(row)
-  const description = createDescription(row, attributes)
-  const minOrderQuantity = parseInteger(
-    pick(row, ['Minimum Order Quantity (MinOQ)'], rowNumber),
-    `minimum order quantity on row ${rowNumber}`,
-  )
-  if (minOrderQuantity < 1) {
-    throw new Error(`Minimum Order Quantity must be at least 1 on row ${rowNumber}`)
-  }
-
-  const product: Product | undefined = active
-    ? {
-        productId,
-        variantId,
-        productCode,
-        slug,
-        title,
-        images,
-        imageStoragePaths,
-        imageVariants,
-        mrpPaise,
-        sellingPricePaise,
-        discountPercent: deriveDiscountPercent(mrpPaise, sellingPricePaise),
-        sizes,
-        stockAvailable: sizes.reduce((total, size) => total + size.stockAvailable, 0),
-        description,
-        sizeChart: [],
-        category,
-        categoryLabel,
-        imageAlt: title,
-        tag: normalizeOptional(pickOptional(row, ['Tag'])),
-        brand: normalizeOptional(pickOptional(row, ['Brand'])),
-        color: normalizeOptional(pickOptional(row, ['Color'])),
-        minOrderQuantity,
-        attributes,
-        fulfillmentBy: normalizeOptional(pickOptional(row, ['Fullfilment by (Seller)'])),
-        shippingProvider: normalizeOptional(pickOptional(row, ['Shipping provider'])),
-        package: {
-          lengthCm: parseOptionalNumber(pickOptional(row, ['Length (CM)']), `Length (CM) on row ${rowNumber}`),
-          breadthCm: parseOptionalNumber(pickOptional(row, ['Breadth (CM)']), `Breadth (CM) on row ${rowNumber}`),
-          heightCm: parseOptionalNumber(pickOptional(row, ['Height (CM)']), `Height (CM) on row ${rowNumber}`),
-          weightKg: parseOptionalNumber(pickOptional(row, ['Weight (KG)']), `Weight (KG) on row ${rowNumber}`),
-        },
-        hsn: normalizeOptional(pickOptional(row, ['HSN'])),
-        taxCode: normalizeOptional(pickOptional(row, ['Tax Code'])),
-        featured: isFeaturedTag(pickOptional(row, ['Tag']) ?? ''),
-        active,
-      }
-    : undefined
-
-  const syncVariant: ProductSyncRecord['variants'][number] | undefined = product
-    ? {
-        variantId,
-        productCode,
-        slug,
-        title,
-        color: product.color ?? null,
-        tag: product.tag ?? null,
-        brand: product.brand ?? null,
-        images,
-        mrpPaise,
-        sellingPricePaise,
-        sizeChart: product.sizeChart,
-        attributes,
-        minOrderQuantity,
-        fulfillmentBy: product.fulfillmentBy ?? null,
-        shippingProvider: product.shippingProvider ?? null,
-        package: product.package,
-        hsn: product.hsn ?? null,
-        taxCode: product.taxCode ?? null,
-        active,
-        featured: product.featured,
-        sizes: sizes.map((size) => ({
-          inventoryId: size.inventoryId,
-          sizeLabel: size.label,
-          stock: size.stockAvailable,
-          active: size.active,
-        })),
-      }
-    : undefined
-
-  return { product, syncVariant }
-}
-
-function createSyncRecords(entries: Array<{ product: Product; syncVariant: ProductSyncRecord['variants'][number] }>) {
-  const recordsByProductId = new Map<string, ProductSyncRecord>()
-
-  for (const { product, syncVariant } of entries) {
-    const existing = recordsByProductId.get(product.productId)
-
-    if (existing) {
-      existing.variants.push(syncVariant)
-      continue
-    }
-
-    recordsByProductId.set(product.productId, {
-      productId: product.productId,
-      slug: createProductSlug(product.productId, product.productId),
-      title: product.title,
-      category: product.category,
-      description: product.description,
-      active: true,
-      variants: [syncVariant],
-    })
-  }
-
-  return Array.from(recordsByProductId.values())
-}
-
-async function resolveProductImages(
-  variantId: string,
-  value: string,
-  rowNumber: number,
-  active: boolean,
-): Promise<ResolvedProductImage[]> {
-  if (!imageManifest) return []
-
-  return resolveProductImagesFromManifest({
-    active,
-    imageManifest,
-    productId: variantId,
-    rowNumber,
-    value,
-  })
-}
-
-function collectImageUrls(row: SheetRow) {
-  return [
-    pickOptional(row, ['Main Image URL']),
-    pickOptional(row, ['Other Image URL 1']),
-    pickOptional(row, ['Other Image URL 2']),
-    pickOptional(row, ['Other Image URL 3']),
-    pickOptional(row, ['Other Image URL 4']),
-    pickOptional(row, ['Other Image URL 5']),
-    pickOptional(row, ['Main Palette Image URL']),
-  ].flatMap((value) => {
-    const normalized = normalizeOptional(value)
-    return normalized ? [toDisplayImageUrl(normalized)] : []
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2
+    const productId = pick(row, ['product_id'], rowNumber)
+    const variantId = pickOptional(row, ['variant_id']) || productId
+    const key = variantId.toLowerCase()
+    if (seen.has(key)) throw new Error(`Duplicate product/variant ID "${variantId}" on row ${rowNumber}`)
+    seen.add(key)
   })
 }
 
 function toDisplayImageUrl(value: string) {
-  const match = value.match(/\/file\/d\/([^/]+)/)
-  if (!match) return value
-
-  return `https://drive.google.com/uc?export=view&id=${match[1]}`
-}
-
-function createProductAttributes(row: SheetRow): ProductAttribute[] {
-  return Object.entries(row)
-    .filter(([key]) => !internalAttributeColumns.has(key))
-    .flatMap(([key, value]) => {
-      const normalized = normalizeOptional(value)
-      return normalized
-        ? [{
-            label: humanizeHeaderKey(key),
-            section: disclosureAttributeColumns.has(key) ? 'disclosure' : 'details',
-            value: normalized,
-          }]
-        : []
-    })
-}
-
-function createDescription(row: SheetRow, attributes: ProductAttribute[]) {
-  const productDetails = normalizeOptional(
-    pickOptional(row, ['Product details', 'Product Details', 'Product Description', 'Description']),
-  )
-  if (productDetails) return productDetails
-
-  const disclaimer = normalizeOptional(pickOptional(row, ['Disclaimer']))
-  if (disclaimer) return disclaimer
-
-  const summaryAttributes = attributes
-    .filter((attribute) => ['Product Material', 'Color', 'Fit', 'Pattern', 'Product Type'].includes(attribute.label))
-    .map((attribute) => `${attribute.label}: ${attribute.value}`)
-
-  return summaryAttributes.length > 0 ? summaryAttributes.join('\n') : pick(row, ['Product Code'], 0)
-}
-
-function assertUniqueVariantIds(rows: SheetRow[]) {
-  const seen = new Map<string, number>()
-
-  rows.forEach((row, index) => {
-    const rowNumber = index + 3
-    const variantId = pick(row, ['Variant ID'], rowNumber)
-    const normalizedVariantId = variantId.toLowerCase()
-    const existingRowNumber = seen.get(normalizedVariantId)
-
-    if (existingRowNumber !== undefined) {
-      throw new Error(`Duplicate Variant ID "${variantId}" on detail rows ${existingRowNumber} and ${rowNumber}`)
-    }
-
-    seen.set(normalizedVariantId, rowNumber)
-  })
+  const fileId = value.match(/\/file\/d\/([^/?#]+)/)?.[1] ?? value.match(/[?&]id=([^&#]+)/)?.[1]
+  return fileId ? `https://drive.google.com/uc?export=view&id=${decodeURIComponent(fileId)}` : value
 }
 
 function parseMoneyToPaise(value: string, context: string) {
   const rupees = Number(value.replace(/[^\d.-]/g, ''))
-
   if (!Number.isFinite(rupees) || rupees <= 0) {
     throw new Error(`Expected a positive amount for ${context}, received "${value}"`)
   }
@@ -600,12 +436,16 @@ function parseMoneyToPaise(value: string, context: string) {
 
 function parseInteger(value: string, context: string) {
   const parsed = Number(value.replace(/[^\d-]/g, ''))
-
   if (!Number.isInteger(parsed) || parsed < 0) {
     throw new Error(`Expected a non-negative integer for ${context}, received "${value}"`)
   }
 
   return parsed
+}
+
+function parseOptionalInteger(value: string | undefined, fallback: number, context: string) {
+  const normalized = normalizeOptional(value)
+  return normalized ? parseInteger(normalized, context) : fallback
 }
 
 function parseOptionalNumber(value: string | undefined, context: string) {
@@ -634,10 +474,7 @@ function humanizeHeaderKey(value: string) {
   return value
     .split('_')
     .filter(Boolean)
-    .map((part) => {
-      if (/^(cod|hsn|mrp)$/i.test(part)) return part.toUpperCase()
-      return `${part.charAt(0).toUpperCase()}${part.slice(1)}`
-    })
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(' ')
 }
 
@@ -650,8 +487,7 @@ function slugify(value: string) {
 }
 
 function createProductSlug(title: string, id: string) {
-  const suffix = shortDeterministicSuffix(id)
-  return `${slugify(title)}-${suffix}`
+  return `${slugify(title)}-${shortDeterministicSuffix(id)}`
 }
 
 function shortDeterministicSuffix(value: string) {
@@ -668,32 +504,9 @@ function createInventoryId(variantId: string, size: string) {
   return `${variantId}:${size.trim().toLowerCase()}`
 }
 
-function createDisplayTitle(title: string, row: SheetRow) {
-  const color = normalizeOptional(pickOptional(row, ['Color']))
-  const productType = normalizeOptional(pickOptional(row, ['Product Type']))
-  const cleanTitle = title
-    .replace(/^women'?s?\s+/i, '')
-    .replace(/\s+for women$/i, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (cleanTitle && cleanTitle !== pickOptional(row, ['Product Code'])) return cleanTitle
-  return [color, productType].filter(Boolean).join(' ') || cleanTitle
-}
-
-function isFeaturedTag(tag: string) {
-  return /featured|most wanted|new arrivals?/i.test(tag)
-}
-
 function assertStableId(value: string, label: string, rowNumber: number) {
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)) {
     throw new Error(`${label} on row ${rowNumber} must use letters, numbers, hyphens, or underscores`)
-  }
-}
-
-function assertSafeStoragePath(imagePath: string, rowNumber: number) {
-  if (path.isAbsolute(imagePath) || imagePath.startsWith('/') || imagePath.includes('..')) {
-    throw new Error(`images on row ${rowNumber} must be relative storage paths`)
   }
 }
 
