@@ -54,29 +54,64 @@ create table if not exists public.product_variant_sizes (
   unique (variant_id, size_label)
 );
 
-insert into public.product_variant_sizes (
-  inventory_id,
-  variant_id,
-  size_label,
-  stock_available,
-  active,
-  created_at,
-  updated_at
-)
-select
-  pv.variant_id,
-  pv.variant_id,
-  coalesce(pv.size_label, 'default'),
-  coalesce(pv.stock_available, 0),
-  false,
-  pv.created_at,
-  pv.updated_at
-from public.product_variants pv
-where not exists (
-  select 1
-  from public.product_variant_sizes pvs
-  where pvs.inventory_id = pv.variant_id
-);
+do $$
+declare
+  v_size_label_sql text;
+  v_stock_available_sql text;
+begin
+  select case
+    when exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'product_variants'
+        and column_name = 'size_label'
+    ) then 'coalesce(pv.size_label, ''default'')'
+    else '''default'''
+  end into v_size_label_sql;
+
+  select case
+    when exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'product_variants'
+        and column_name = 'stock_available'
+    ) then 'coalesce(pv.stock_available, 0)'
+    else '0'
+  end into v_stock_available_sql;
+
+  execute format(
+    $sql$
+      insert into public.product_variant_sizes (
+        inventory_id,
+        variant_id,
+        size_label,
+        stock_available,
+        active,
+        created_at,
+        updated_at
+      )
+      select
+        pv.variant_id,
+        pv.variant_id,
+        %s,
+        %s,
+        false,
+        pv.created_at,
+        pv.updated_at
+      from public.product_variants pv
+      where not exists (
+        select 1
+        from public.product_variant_sizes pvs
+        where pvs.inventory_id = pv.variant_id
+      )
+    $sql$,
+    v_size_label_sql,
+    v_stock_available_sql
+  );
+end;
+$$;
 
 create index if not exists product_variant_sizes_variant_id_idx
   on public.product_variant_sizes(variant_id);
