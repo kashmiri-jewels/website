@@ -59,10 +59,10 @@ type OrderRow = {
   customer_email: string
   shipping_address: Record<string, unknown>
   created_at: string
-  order_items?: OrderItemRow[]
-  payments?: PaymentRow[]
-  shipments?: ShipmentRow[]
-  order_return_requests?: ReturnRequestRow[]
+  order_items?: OrderItemRow[] | OrderItemRow | null
+  payments?: PaymentRow[] | PaymentRow | null
+  shipments?: ShipmentRow[] | ShipmentRow | null
+  order_return_requests?: ReturnRequestRow[] | ReturnRequestRow | null
 }
 
 const allowedReturnReasons = new Set([
@@ -106,7 +106,7 @@ Deno.serve(async (request) => {
     if (action === 'request_return') {
       const reason = normalizeReturnReason(body?.reason)
       const customerNote = normalizeCustomerNote(body?.note)
-      const existingActiveReturn = (order.order_return_requests ?? []).find((requestRow) =>
+      const existingActiveReturn = relationRows(order.order_return_requests).find((requestRow) =>
         ['requested', 'reviewing', 'approved', 'pickup_scheduled'].includes(requestRow.status),
       )
 
@@ -118,7 +118,7 @@ Deno.serve(async (request) => {
         throw new CustomerOrderError('This order is not eligible for a return request yet.', 409)
       }
 
-      const requestedItems = (order.order_items ?? []).map((item) => ({
+      const requestedItems = relationRows(order.order_items).map((item) => ({
         itemId: item.id,
         productCode: item.product_code,
         title: item.title,
@@ -190,9 +190,9 @@ async function loadCustomerOrder(
 }
 
 function serializeCustomerOrder(order: OrderRow) {
-  const latestPayment = [...(order.payments ?? [])].sort(compareCreatedDesc)[0] ?? null
-  const latestShipment = [...(order.shipments ?? [])].sort(compareUpdatedDesc)[0] ?? null
-  const returnRequests = [...(order.order_return_requests ?? [])].sort(compareCreatedDesc)
+  const latestPayment = relationRows(order.payments).sort(compareCreatedDesc)[0] ?? null
+  const latestShipment = relationRows(order.shipments).sort(compareUpdatedDesc)[0] ?? null
+  const returnRequests = relationRows(order.order_return_requests).sort(compareCreatedDesc)
   const trackingNumber = latestShipment?.tracking_number ?? null
 
   return {
@@ -208,7 +208,7 @@ function serializeCustomerOrder(order: OrderRow) {
     customerPhone: maskPhone(order.customer_phone),
     shippingAddress: summarizeAddress(order.shipping_address),
     createdAt: order.created_at,
-    items: (order.order_items ?? []).map((item) => ({
+    items: relationRows(order.order_items).map((item) => ({
       id: item.id,
       productSlug: item.product_slug,
       variantSlug: item.variant_slug,
@@ -326,10 +326,15 @@ function normalizeCustomerNote(value: unknown) {
 }
 
 function isReturnRequestAllowed(order: OrderRow) {
-  const payment = [...(order.payments ?? [])].sort(compareCreatedDesc)[0]
+  const payment = relationRows(order.payments).sort(compareCreatedDesc)[0]
   if (!payment || payment.status !== 'verified') return false
 
   return ['paid', 'shipment_pending', 'shipped', 'delivered'].includes(order.status)
+}
+
+function relationRows<Row>(value: Row[] | Row | null | undefined): Row[] {
+  if (!value) return []
+  return Array.isArray(value) ? value : [value]
 }
 
 async function verifyTurnstileIfConfigured(token: unknown, request: Request) {
