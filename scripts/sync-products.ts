@@ -101,6 +101,9 @@ async function main() {
       .map(({ product }) => product)
       .filter((product): product is Product => Boolean(product)),
   )
+  if (products.length === 0) {
+    throw new Error('Product catalog sync produced 0 active products. Check the active column and PRODUCTS_CSV_URL.')
+  }
   const syncRecords = createSyncRecords(
     normalized
       .map(({ product, syncVariant }) => (product && syncVariant ? { product, syncVariant } : null))
