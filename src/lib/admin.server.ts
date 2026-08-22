@@ -1231,7 +1231,7 @@ async function requireAdminEmail() {
   if (!env.accessTeamDomain || !env.accessAudience) {
     if (env.adminEmails.length === 1) return env.adminEmails[0]
 
-    throw new AdminError('Admin access is not configured', 503, false)
+    throw new AdminError('Admin access is not configured', 503, true)
   }
 
   const assertion = getRequestHeader('cf-access-jwt-assertion')
@@ -1363,7 +1363,7 @@ function readEnv(name: string) {
 function requireEnv(name: string) {
   const value = readEnv(name)
   if (!value) {
-    throw new AdminError(`${name} is not configured`, 503, false)
+    throw new AdminError(`${name} is not configured`, 503, true)
   }
 
   return value
@@ -1371,7 +1371,7 @@ function requireEnv(name: string) {
 
 function requireOptionalAdminEnv(value: string | undefined, name: string) {
   if (!value) {
-    throw new AdminError(`${name} is not configured`, 503, false)
+    throw new AdminError(`${name} is not configured`, 503, true)
   }
 
   return value
@@ -1408,7 +1408,7 @@ function parseAdminEmails(value: string | undefined) {
       .filter(Boolean) ?? []
 
   if (emails.length === 0) {
-    throw new AdminError('ADMIN_EMAILS is not configured', 503, false)
+    throw new AdminError('ADMIN_EMAILS is not configured', 503, true)
   }
 
   return emails
