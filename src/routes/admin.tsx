@@ -291,7 +291,7 @@ function AdminDashboardPage({ dashboard }: { dashboard: AdminDashboard }) {
 
         <AdminMetrics dashboard={dashboard} />
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        <section className="mt-6 grid gap-6">
           <div className="min-w-0">
             <AdminViewTabs
               activeView={activeView}

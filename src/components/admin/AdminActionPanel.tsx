@@ -51,7 +51,7 @@ export function AdminActionPanel({
   onRetrySubmit,
 }: AdminActionPanelProps) {
   return (
-    <aside className="xl:sticky xl:top-[calc(var(--site-header-height)+1rem)] xl:self-start">
+    <section className="grid gap-6 lg:grid-cols-2">
       <form
         onSubmit={onPublishSubmit}
         className="border border-[var(--color-line)] bg-[var(--color-surface)] p-5"
@@ -168,7 +168,7 @@ export function AdminActionPanel({
 
       <form
         onSubmit={onRetrySubmit}
-        className="mt-6 border border-[var(--color-line)] bg-[var(--color-surface)] p-5"
+        className="border border-[var(--color-line)] bg-[var(--color-surface)] p-5"
       >
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center bg-[var(--color-ink)] text-[var(--color-paper)]">
@@ -219,6 +219,6 @@ export function AdminActionPanel({
           </p>
         ) : null}
       </form>
-    </aside>
+    </section>
   )
 }
