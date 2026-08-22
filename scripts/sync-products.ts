@@ -121,9 +121,13 @@ async function loadRows() {
 
   const csvUrl = process.env.PRODUCTS_CSV_URL
   if (csvUrl) {
-    const response = await fetch(csvUrl)
+    const response = await fetch(normalizeGoogleSheetsCsvUrl(csvUrl))
     if (!response.ok) throw new Error(`Unable to read PRODUCTS_CSV_URL: ${response.status} ${response.statusText}`)
-    return sheetRowsFromValues(parseCsv(await response.text()), requiredColumns, 'PRODUCTS_CSV_URL')
+    const content = await response.text()
+    if (content.trimStart().startsWith('<')) {
+      throw new Error('PRODUCTS_CSV_URL returned a web page, not CSV. In Google Sheets use File > Share > Publish to web > Comma-separated values (.csv).')
+    }
+    return sheetRowsFromValues(parseCsv(content), requiredColumns, 'PRODUCTS_CSV_URL')
   }
 
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
@@ -430,6 +434,29 @@ function assertUniqueIds(rows: SheetRow[]) {
 function toDisplayImageUrl(value: string) {
   const fileId = value.match(/\/file\/d\/([^/?#]+)/)?.[1] ?? value.match(/[?&]id=([^&#]+)/)?.[1]
   return fileId ? `https://drive.google.com/uc?export=view&id=${decodeURIComponent(fileId)}` : value
+}
+
+function normalizeGoogleSheetsCsvUrl(value: string) {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return value
+  }
+
+  if (url.hostname !== 'docs.google.com' || !url.pathname.includes('/spreadsheets/d/')) return value
+
+  const sheetId = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/)?.[1]
+  if (!sheetId) return value
+
+  const gid = url.searchParams.get('gid') || url.hash.match(/gid=(\d+)/)?.[1] || '0'
+  const isPublishedUrl = url.pathname.includes('/pub') || url.searchParams.has('output')
+
+  if (isPublishedUrl) {
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv`
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
 }
 
 function parseMoneyToPaise(value: string, context: string) {
