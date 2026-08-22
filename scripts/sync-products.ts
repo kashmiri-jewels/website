@@ -433,7 +433,7 @@ function assertUniqueIds(rows: SheetRow[]) {
 
 function toDisplayImageUrl(value: string) {
   const fileId = value.match(/\/file\/d\/([^/?#]+)/)?.[1] ?? value.match(/[?&]id=([^&#]+)/)?.[1]
-  return fileId ? `https://drive.google.com/uc?export=view&id=${decodeURIComponent(fileId)}` : value
+  return fileId ? `https://drive.google.com/thumbnail?id=${decodeURIComponent(fileId)}&sz=w1200` : value
 }
 
 function normalizeGoogleSheetsCsvUrl(value: string) {
