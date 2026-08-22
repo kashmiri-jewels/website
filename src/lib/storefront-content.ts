@@ -14,10 +14,14 @@ export type HomePageContent = {
   bestSellersSection: SectionContent
   categorySection: SectionContent
   hero: {
+    copy: string
+    eyebrow: string
+    headline: string
     primaryCta: StorefrontLink
     screenReaderTitle: string
     slides: StorefrontImage[]
     styleFinderLabel: string
+    tagline: string
   }
   imageStory: SectionContent & {
     copy: string
@@ -111,6 +115,10 @@ export function getHomePageContent(): HomePageContent {
       image: requireImage(seo.image, 'homePage.seo.image'),
     },
     hero: {
+      eyebrow: requireString(hero, 'homePage.hero.eyebrow', ['eyebrow']),
+      headline: requireString(hero, 'homePage.hero.headline', ['headline']),
+      tagline: requireString(hero, 'homePage.hero.tagline', ['tagline']),
+      copy: requireString(hero, 'homePage.hero.copy', ['copy']),
       screenReaderTitle: requireString(hero, 'homePage.hero.screenReaderTitle', [
         'screenReaderTitle',
       ]),

@@ -30,7 +30,7 @@ export function HomeHero({ content }: HomeHeroProps) {
     <section>
       <div className="border-b border-[var(--color-line)] bg-[var(--color-primary)]">
         <h1 className="sr-only">{content.screenReaderTitle}</h1>
-        <div className="relative aspect-[2/1] overflow-hidden bg-[var(--color-primary)] sm:aspect-[16/7] lg:aspect-[5/2] xl:max-h-[590px]">
+        <div className="relative min-h-[520px] overflow-hidden bg-[var(--color-primary)] sm:min-h-[560px] lg:min-h-[640px] xl:max-h-[680px]">
           {slides.map((slide, index) => (
             <img
               key={slide.url}
@@ -46,15 +46,32 @@ export function HomeHero({ content }: HomeHeroProps) {
             />
           ))}
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10">
-            <div className="mx-auto flex max-w-[90rem] justify-end px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-              <div className="pointer-events-auto flex flex-wrap justify-end gap-2">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#053f31]/92 via-[#053f31]/58 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
+
+          <div className="relative z-10 flex min-h-[520px] items-end sm:min-h-[560px] lg:min-h-[640px]">
+            <div className="mx-auto w-full max-w-[90rem] px-4 pb-8 pt-14 sm:px-6 sm:pb-12 lg:px-8 lg:pb-16">
+              <div className="max-w-2xl text-[#fffaf0]">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#f7df9a] sm:text-sm">
+                  {content.eyebrow}
+                </p>
+                <p className="mt-4 max-w-xl font-serif text-5xl font-normal leading-[0.95] text-[#fffaf0] sm:text-6xl lg:text-7xl">
+                  {content.headline}
+                </p>
+                <p className="mt-5 text-sm font-semibold uppercase tracking-[0.22em] text-[#f7df9a] sm:text-base">
+                  {content.tagline}
+                </p>
+                <p className="mt-4 max-w-lg text-base leading-7 text-[#fff6de] sm:text-lg">
+                  {content.copy}
+                </p>
+              </div>
+              <div className="mt-7 flex flex-wrap gap-3">
                 <Button
                   nativeButton={false}
                   render={
                     <a
                       href={content.primaryCta.url}
-                      className="inline-flex h-9 items-center justify-center border border-[var(--color-blush)] bg-[var(--color-primary)] px-3 text-xs font-medium text-[#f7df9a] transition duration-150 ease-out hover:bg-[var(--color-primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blush)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
+                      className="inline-flex h-11 items-center justify-center border border-[#f7df9a] bg-[#c29a3d] px-5 text-sm font-semibold text-[#053f31] transition duration-150 ease-out hover:bg-[#f7df9a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f7df9a] focus-visible:ring-offset-2 active:scale-[0.99]"
                     />
                   }
                 >
@@ -62,7 +79,7 @@ export function HomeHero({ content }: HomeHeroProps) {
                 </Button>
                 <StyleFinder
                   triggerLabel={content.styleFinderLabel}
-                  triggerClassName="inline-flex h-9 items-center justify-center gap-2 border border-[var(--color-blush)] bg-[var(--color-paper)] px-3 text-xs font-medium text-[var(--color-ink)] transition duration-150 ease-out hover:bg-[var(--color-blush-surface)] hover:text-[var(--color-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blush)] focus-visible:ring-offset-2 active:scale-[0.99] sm:h-10 sm:px-5 sm:text-sm"
+                  triggerClassName="inline-flex h-11 items-center justify-center gap-2 border border-[#f7df9a] bg-[#fffaf0] px-5 text-sm font-semibold text-[#053f31] transition duration-150 ease-out hover:bg-[#f7df9a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f7df9a] focus-visible:ring-offset-2 active:scale-[0.99]"
                 />
               </div>
             </div>

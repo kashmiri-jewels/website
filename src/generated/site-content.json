@@ -113,6 +113,10 @@
     },
     "hero": {
       "screenReaderTitle": "Kashmiri Jewels — latest collection",
+      "eyebrow": "Kashmiri Jewels",
+      "headline": "Heritage jewellery, handcrafted to feel timeless",
+      "tagline": "Heritage. Handcrafted. Timeless.",
+      "copy": "Discover ornate leaf-inspired earrings, bangles, and occasion pieces finished in our signature emerald and gold palette.",
       "slides": [
         {
           "url": "/assets/hero/kashmiri-jewels-featured-jewellery-hero.webp",
