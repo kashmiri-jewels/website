@@ -62,16 +62,20 @@ jobs:
           required SUPABASE_URL
           required SUPABASE_SERVICE_ROLE_KEY
           required OPS_SERVICE_ROLE_KEY
-          required RAZORPAY_KEY_ID
-          required RAZORPAY_KEY_SECRET
-          required RAZORPAY_WEBHOOK_SECRET
-          required DELHIVERY_API_TOKEN
           required DELHIVERY_ENABLED
-          required DELHIVERY_PACKAGE_BREADTH_CM
-          required DELHIVERY_PACKAGE_HEIGHT_CM
-          required DELHIVERY_PACKAGE_LENGTH_CM
-          required DELHIVERY_PACKAGE_WEIGHT_GRAMS
           required WHATSAPP_ORDER_NOTIFICATIONS_ENABLED
+
+          if [ "$DELHIVERY_ENABLED" = "true" ]; then
+            required DELHIVERY_API_TOKEN
+            required DELHIVERY_PACKAGE_BREADTH_CM
+            required DELHIVERY_PACKAGE_HEIGHT_CM
+            required DELHIVERY_PACKAGE_LENGTH_CM
+            required DELHIVERY_PACKAGE_WEIGHT_GRAMS
+          fi
+
+          if [ "$RAZORPAY_KEY_ID" = "" ] || [ "$RAZORPAY_KEY_SECRET" = "" ] || [ "$RAZORPAY_WEBHOOK_SECRET" = "" ]; then
+            echo "Razorpay secrets are not complete. Edge functions will deploy, but live checkout will not work until Razorpay is configured."
+          fi
 
           if [ "$WHATSAPP_ORDER_NOTIFICATIONS_ENABLED" = "true" ]; then
             required WHATSAPP_API_TOKEN
@@ -85,15 +89,7 @@ jobs:
             SUPABASE_URL="$SUPABASE_URL"
             SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
             OPS_SERVICE_ROLE_KEY="$OPS_SERVICE_ROLE_KEY"
-            RAZORPAY_KEY_ID="$RAZORPAY_KEY_ID"
-            RAZORPAY_KEY_SECRET="$RAZORPAY_KEY_SECRET"
-            RAZORPAY_WEBHOOK_SECRET="$RAZORPAY_WEBHOOK_SECRET"
-            DELHIVERY_API_TOKEN="$DELHIVERY_API_TOKEN"
             DELHIVERY_ENABLED="$DELHIVERY_ENABLED"
-            DELHIVERY_PACKAGE_BREADTH_CM="$DELHIVERY_PACKAGE_BREADTH_CM"
-            DELHIVERY_PACKAGE_HEIGHT_CM="$DELHIVERY_PACKAGE_HEIGHT_CM"
-            DELHIVERY_PACKAGE_LENGTH_CM="$DELHIVERY_PACKAGE_LENGTH_CM"
-            DELHIVERY_PACKAGE_WEIGHT_GRAMS="$DELHIVERY_PACKAGE_WEIGHT_GRAMS"
             WHATSAPP_ORDER_NOTIFICATIONS_ENABLED="$WHATSAPP_ORDER_NOTIFICATIONS_ENABLED"
           )
 
@@ -110,6 +106,14 @@ jobs:
           optional_secret WHATSAPP_ORDER_CONFIRMED_TEMPLATE_NAME
           optional_secret WHATSAPP_ORDER_CONFIRMED_TEMPLATE_LANGUAGE
           optional_secret WHATSAPP_ESTIMATED_DELIVERY_DAYS
+          optional_secret RAZORPAY_KEY_ID
+          optional_secret RAZORPAY_KEY_SECRET
+          optional_secret RAZORPAY_WEBHOOK_SECRET
+          optional_secret DELHIVERY_API_TOKEN
+          optional_secret DELHIVERY_PACKAGE_BREADTH_CM
+          optional_secret DELHIVERY_PACKAGE_HEIGHT_CM
+          optional_secret DELHIVERY_PACKAGE_LENGTH_CM
+          optional_secret DELHIVERY_PACKAGE_WEIGHT_GRAMS
 
           supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${secrets[@]}"
 

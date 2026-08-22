@@ -29,12 +29,13 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_ORDERS_ENABLED: ${{ vars.VITE_ORDERS_ENABLED || 'false' }}
       VITE_UMAMI_DOMAINS: ${{ vars.VITE_UMAMI_DOMAINS }}
       VITE_UMAMI_SCRIPT_URL: ${{ vars.VITE_UMAMI_SCRIPT_URL }}
       VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}
-      VITE_SANITY_PROJECT_ID: ${{ vars.VITE_SANITY_PROJECT_ID }}
-      VITE_SANITY_DATASET: ${{ vars.VITE_SANITY_DATASET }}
-      VITE_SANITY_API_VERSION: ${{ vars.VITE_SANITY_API_VERSION }}
+      VITE_SANITY_PROJECT_ID: ${{ vars.VITE_SANITY_PROJECT_ID || 'o4p78bwk' }}
+      VITE_SANITY_DATASET: ${{ vars.VITE_SANITY_DATASET || 'production' }}
+      VITE_SANITY_API_VERSION: ${{ vars.VITE_SANITY_API_VERSION || '2026-06-16' }}
       SANITY_CONTENT_PERSPECTIVE: published
       SANITY_READ_TOKEN: ${{ secrets.SANITY_READ_TOKEN }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -71,36 +72,31 @@ jobs:
             test -n "${!1}" || { echo "$1 is required"; exit 1; }
           }
 
-          required GOOGLE_SHEETS_SPREADSHEET_ID
-          required GOOGLE_SERVICE_ACCOUNT_JSON
-          required GOOGLE_SHEETS_RANGE
-          required PRODUCT_IMAGE_PUBLIC_BASE_URL
-          required R2_PRODUCT_IMAGES_BUCKET
-          required R2_ACCESS_KEY_ID
-          required R2_SECRET_ACCESS_KEY
-          required VITE_SUPABASE_URL
-          required VITE_SUPABASE_ANON_KEY
-          required VITE_UMAMI_DOMAINS
-          required VITE_UMAMI_SCRIPT_URL
-          required VITE_UMAMI_WEBSITE_ID
           required VITE_SANITY_PROJECT_ID
           required VITE_SANITY_DATASET
           required VITE_SANITY_API_VERSION
-          required SANITY_READ_TOKEN
-          required SUPABASE_URL
-          required SUPABASE_SERVICE_ROLE_KEY
-          required EXPECTED_SUPABASE_PROJECT_REF
           required CLOUDFLARE_ACCOUNT_ID
           required CLOUDFLARE_API_TOKEN
           required CLOUDFLARE_WORKER_NAME
           required CLOUDFLARE_DOMAIN
-          required CLOUDFLARE_WWW_DOMAIN
-          required DELHIVERY_API_TOKEN
+
+          if [ "$VITE_ORDERS_ENABLED" = "true" ]; then
+            required VITE_SUPABASE_URL
+            required VITE_SUPABASE_ANON_KEY
+            required SUPABASE_URL
+            required SUPABASE_SERVICE_ROLE_KEY
+            required EXPECTED_SUPABASE_PROJECT_REF
+          fi
 
       - run: pnpm typecheck
 
       - name: Publish production catalog data and images
-        run: pnpm publish:catalog
+        run: |
+          if [ -n "$GOOGLE_SHEETS_SPREADSHEET_ID" ] && [ -n "$GOOGLE_SERVICE_ACCOUNT_JSON" ] && [ -n "$R2_PRODUCT_IMAGES_BUCKET" ]; then
+            pnpm publish:catalog
+          else
+            echo "Skipping catalog publish because Google Drive/R2 catalog settings are not complete yet."
+          fi
 
       - run: pnpm build
 
@@ -125,4 +121,6 @@ jobs:
       - name: Verify production domains
         run: |
           curl --fail --silent --show-error --head --retry 5 --retry-delay 3 "https://${CLOUDFLARE_DOMAIN}"
-          curl --fail --silent --show-error --head --retry 5 --retry-delay 3 "https://${CLOUDFLARE_WWW_DOMAIN}"
+          if [ -n "$CLOUDFLARE_WWW_DOMAIN" ]; then
+            curl --fail --silent --show-error --head --retry 5 --retry-delay 3 "https://${CLOUDFLARE_WWW_DOMAIN}"
+          fi
