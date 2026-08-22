@@ -109,11 +109,16 @@ const [posts, siteContent] = await Promise.all([
   `),
 ])
 
+const storefrontPosts = Array.isArray(posts) ? posts.filter(isCurrentBrandPost) : []
 const normalizedSiteContent = normalizeSiteContent(siteContent)
-overrideHeroSlides(normalizedSiteContent)
 
-await writeJson(blogOutputPath, posts)
-await writeJson(siteContentOutputPath, normalizedSiteContent)
+await writeJson(blogOutputPath, storefrontPosts)
+if (hasRequiredStorefrontContent(normalizedSiteContent)) {
+  overrideHeroSlides(normalizedSiteContent)
+  await writeJson(siteContentOutputPath, normalizedSiteContent)
+} else {
+  console.log('Sanity storefront content sync skipped: missing siteSettings or homePage; keeping built-in fallback content.')
+}
 
 console.log(
   `Synced ${Array.isArray(posts) ? posts.length : 0} blog posts and storefront content from ${dataset} with ${perspective} perspective.`,
@@ -212,6 +217,10 @@ function validateContent(content: Record<string, unknown>) {
   }
 }
 
+function hasRequiredStorefrontContent(content: Record<string, unknown>) {
+  return isRecord(content.siteSettings) && isRecord(content.homePage)
+}
+
 function compareUpdatedAtDesc(left: Record<string, unknown>, right: Record<string, unknown>) {
   return readDateMs(right._updatedAt) - readDateMs(left._updatedAt)
 }
@@ -247,4 +256,8 @@ function parsePerspective(value: string | undefined): 'drafts' | 'published' {
   if (value === 'drafts' || value === 'published') return value
 
   throw new Error('SANITY_CONTENT_PERSPECTIVE must be "drafts" or "published".')
+}
+
+function isCurrentBrandPost(post: unknown) {
+  return !JSON.stringify(post).toLowerCase().includes('trenzura')
 }
