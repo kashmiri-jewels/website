@@ -91,6 +91,16 @@ export type AdminDashboard = {
   }
 }
 
+export type AdminDashboardState =
+  | {
+      authenticated: true
+      dashboard: AdminDashboard
+    }
+  | {
+      authenticated: false
+      message: string
+    }
+
 export type RetryShipmentResult = {
   adminEmail: string
   orderNumber: string
@@ -158,6 +168,7 @@ export type AdminOrderDetails = InvoiceData
 
 type AdminEnv = {
   adminEmails: string[]
+  adminPassword?: string
   accessTeamDomain?: string
   accessAudience?: string
   adminDevEmail?: string
@@ -180,8 +191,88 @@ export async function loadAdminDashboard(): Promise<AdminDashboard> {
   try {
     const adminEmail = await requireAdminEmail()
     const env = readAdminEnv()
-    const supabase = createAdminSupabaseClient(env)
-    const [
+    return loadAdminDashboardForEmail(env, adminEmail)
+  } catch (error) {
+    throw sanitizeAdminError(error, 'Unable to load admin dashboard')
+  }
+}
+
+export async function loadAdminDashboardState(): Promise<AdminDashboardState> {
+  try {
+    return {
+      authenticated: true,
+      dashboard: await loadAdminDashboard(),
+    }
+  } catch (error) {
+    if (error instanceof AdminError && error.status === 401) {
+      setAdminResponseHeaders()
+      return {
+        authenticated: false,
+        message: error.message,
+      }
+    }
+
+    throw error
+  }
+}
+
+export async function loginAdminWithPassword(password: string): Promise<AdminDashboardState> {
+  setAdminResponseHeaders()
+  requireSameOriginMutation()
+
+  const env = readAdminEnv()
+  if (!env.adminPassword) {
+    throw new AdminError('ADMIN_PASSWORD is not configured', 503, true)
+  }
+
+  if (!timingSafeEqual(password, env.adminPassword)) {
+    throw new AdminError('Incorrect admin password', 401, true)
+  }
+
+  setResponseHeader(
+    'Set-Cookie',
+    `kj_admin_session=${await createAdminSessionValue(env.adminPassword)}; Path=/; Max-Age=43200; HttpOnly; Secure; SameSite=Lax`,
+  )
+
+  return {
+    authenticated: true,
+    dashboard: await loadAdminDashboardForEmail(env, env.adminEmails[0]),
+  }
+}
+
+async function loadAdminDashboardForEmail(env: AdminEnv, adminEmail: string): Promise<AdminDashboard> {
+  const supabase = createAdminSupabaseClient(env)
+  const [
+    recentOrders,
+    shipmentPendingOrders,
+    paymentReviewOrders,
+    failedPayments,
+    integrationErrors,
+    lowStockVariants,
+    returnRequests,
+  ] = await Promise.all([
+    selectRows<AdminOrderRow>(supabase, 'ops_orders_recent', recentOrdersLimit),
+    selectRows<AdminOrderRow>(supabase, 'ops_shipment_pending_orders', adminViewLimit),
+    selectRows<AdminOrderRow>(supabase, 'ops_payment_review_orders', adminViewLimit),
+    selectRows<AdminOrderRow>(supabase, 'ops_failed_payments', adminViewLimit),
+    selectRows<AdminIntegrationErrorRow>(supabase, 'ops_integration_errors', adminViewLimit),
+    selectRows<AdminLowStockVariantRow>(supabase, 'ops_low_stock_variants', adminViewLimit),
+    selectRows<AdminReturnRequestRow>(supabase, 'ops_return_requests', adminViewLimit),
+  ])
+
+  return {
+    adminEmail,
+    loadedAt: new Date().toISOString(),
+    shownCounts: {
+      recentOrders: recentOrders.length,
+      shipmentPendingOrders: shipmentPendingOrders.length,
+      paymentReviewOrders: paymentReviewOrders.length,
+      failedPayments: failedPayments.length,
+      integrationErrors: integrationErrors.length,
+      lowStockVariants: lowStockVariants.length,
+      returnRequests: returnRequests.length,
+    },
+    views: {
       recentOrders,
       shipmentPendingOrders,
       paymentReviewOrders,
@@ -189,40 +280,7 @@ export async function loadAdminDashboard(): Promise<AdminDashboard> {
       integrationErrors,
       lowStockVariants,
       returnRequests,
-    ] = await Promise.all([
-      selectRows<AdminOrderRow>(supabase, 'ops_orders_recent', recentOrdersLimit),
-      selectRows<AdminOrderRow>(supabase, 'ops_shipment_pending_orders', adminViewLimit),
-      selectRows<AdminOrderRow>(supabase, 'ops_payment_review_orders', adminViewLimit),
-      selectRows<AdminOrderRow>(supabase, 'ops_failed_payments', adminViewLimit),
-      selectRows<AdminIntegrationErrorRow>(supabase, 'ops_integration_errors', adminViewLimit),
-      selectRows<AdminLowStockVariantRow>(supabase, 'ops_low_stock_variants', adminViewLimit),
-      selectRows<AdminReturnRequestRow>(supabase, 'ops_return_requests', adminViewLimit),
-    ])
-
-    return {
-      adminEmail,
-      loadedAt: new Date().toISOString(),
-      shownCounts: {
-        recentOrders: recentOrders.length,
-        shipmentPendingOrders: shipmentPendingOrders.length,
-        paymentReviewOrders: paymentReviewOrders.length,
-        failedPayments: failedPayments.length,
-        integrationErrors: integrationErrors.length,
-        lowStockVariants: lowStockVariants.length,
-        returnRequests: returnRequests.length,
-      },
-      views: {
-        recentOrders,
-        shipmentPendingOrders,
-        paymentReviewOrders,
-        failedPayments,
-        integrationErrors,
-        lowStockVariants,
-        returnRequests,
-      },
-    }
-  } catch (error) {
-    throw sanitizeAdminError(error, 'Unable to load admin dashboard')
+    },
   }
 }
 
@@ -1230,9 +1288,11 @@ async function requireAdminEmail() {
   }
 
   if (!env.accessTeamDomain || !env.accessAudience) {
-    if (env.adminEmails.length === 1) return env.adminEmails[0]
+    if (env.adminEmails.length === 1 && (await hasValidAdminSession(env))) {
+      return env.adminEmails[0]
+    }
 
-    throw new AdminError('Admin access is not configured', 503, true)
+    throw new AdminError('Admin password is required', 401, true)
   }
 
   const assertion = getRequestHeader('cf-access-jwt-assertion')
@@ -1338,6 +1398,7 @@ function readAdminEnv(): AdminEnv {
 
   return {
     adminEmails,
+    adminPassword: readEnv('ADMIN_PASSWORD'),
     accessTeamDomain: readEnv('CF_ACCESS_TEAM_DOMAIN'),
     accessAudience: readEnv('CF_ACCESS_AUD'),
     adminDevEmail: readEnv('ADMIN_DEV_EMAIL'),
@@ -1359,6 +1420,61 @@ function readAdminEnv(): AdminEnv {
 function readEnv(name: string) {
   const nodeEnv = typeof process !== 'undefined' ? process.env[name] : undefined
   return workerEnv[name] || nodeEnv
+}
+
+async function hasValidAdminSession(env: AdminEnv) {
+  if (!env.adminPassword) {
+    throw new AdminError('ADMIN_PASSWORD is not configured', 503, true)
+  }
+
+  const cookie = getRequestHeader('cookie') ?? ''
+  const sessionValue = readCookie(cookie, 'kj_admin_session')
+  if (!sessionValue) return false
+
+  return timingSafeEqual(sessionValue, await createAdminSessionValue(env.adminPassword))
+}
+
+async function createAdminSessionValue(adminPassword: string) {
+  const encoder = new TextEncoder()
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    encoder.encode(`kashmiri-jewels-admin-v1:${adminPassword}`),
+  )
+
+  return base64UrlEncode(new Uint8Array(digest))
+}
+
+function readCookie(cookieHeader: string, name: string) {
+  return cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`))
+    ?.slice(name.length + 1)
+}
+
+function base64UrlEncode(bytes: Uint8Array) {
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+
+  const encoded =
+    typeof btoa === 'function' ? btoa(binary) : Buffer.from(binary, 'binary').toString('base64')
+
+  return encoded.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+}
+
+function timingSafeEqual(left: string, right: string) {
+  const leftBytes = new TextEncoder().encode(left)
+  const rightBytes = new TextEncoder().encode(right)
+  let diff = leftBytes.length ^ rightBytes.length
+  const length = Math.max(leftBytes.length, rightBytes.length)
+
+  for (let index = 0; index < length; index += 1) {
+    diff |= (leftBytes[index] ?? 0) ^ (rightBytes[index] ?? 0)
+  }
+
+  return diff === 0
 }
 
 function requireEnv(name: string, fallbackName?: string) {

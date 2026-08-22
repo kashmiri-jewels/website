@@ -1,7 +1,7 @@
 import { Button } from '@base-ui/react/button'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { createServerFn, useServerFn } from '@tanstack/react-start'
-import { RefreshCw, ShieldCheck } from 'lucide-react'
+import { LockKeyhole, RefreshCw, ShieldCheck } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
@@ -11,6 +11,8 @@ import { AdminMetrics } from '../components/admin/AdminMetrics'
 import { AdminViewTabs } from '../components/admin/AdminViewTabs'
 import { createPageMeta } from '../lib/seo'
 import type {
+  AdminDashboard,
+  AdminDashboardState,
   CatalogPublishEnvironment,
   CatalogPublishRun,
 } from '../lib/admin.server'
@@ -22,9 +24,24 @@ import {
 } from '../lib/admin-ui'
 
 const getAdminDashboard = createServerFn({ method: 'GET' }).handler(async () => {
-  const { loadAdminDashboard } = await import('../lib/admin.server')
-  return loadAdminDashboard()
+  const { loadAdminDashboardState } = await import('../lib/admin.server')
+  return loadAdminDashboardState()
 })
+
+const loginAdmin = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Admin password is required')
+    }
+
+    return {
+      password: String((data as { password?: unknown }).password ?? ''),
+    }
+  })
+  .handler(async ({ data }) => {
+    const { loginAdminWithPassword } = await import('../lib/admin.server')
+    return loginAdminWithPassword(data.password)
+  })
 
 const retryAdminShipment = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => {
@@ -85,7 +102,86 @@ export const Route = createFileRoute('/admin')({
 })
 
 function AdminPage() {
-  const dashboard = Route.useLoaderData()
+  const initialState = Route.useLoaderData() as AdminDashboardState
+  const [adminState, setAdminState] = useState(initialState)
+
+  if (!adminState.authenticated) {
+    return <AdminPasswordGate initialMessage={adminState.message} onAuthenticated={setAdminState} />
+  }
+
+  return <AdminDashboardPage dashboard={adminState.dashboard} />
+}
+
+function AdminPasswordGate({
+  initialMessage,
+  onAuthenticated,
+}: {
+  initialMessage: string
+  onAuthenticated: (state: AdminDashboardState) => void
+}) {
+  const submitLogin = useServerFn(loginAdmin)
+  const [password, setPassword] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [message, setMessage] = useState(initialMessage)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setStatus('loading')
+    setMessage('')
+
+    try {
+      const state = await submitLogin({ data: { password } })
+      onAuthenticated(state)
+      setPassword('')
+      setStatus('idle')
+    } catch (error) {
+      setStatus('error')
+      setMessage(error instanceof Error ? error.message : 'Unable to unlock admin')
+    }
+  }
+
+  return (
+    <main className="grid min-h-[55svh] place-items-center px-4 py-12 sm:px-6 lg:px-8">
+      <section className="w-full max-w-md border border-[var(--color-line)] bg-[var(--color-paper)] p-6">
+        <span className="grid size-11 place-items-center bg-[var(--color-primary)] text-[#f7df9a]">
+          <LockKeyhole className="size-5" aria-hidden="true" />
+        </span>
+        <h1 className="mt-5 font-serif text-4xl font-normal leading-none text-[var(--color-ink)]">
+          Admin locked
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">
+          Enter the admin password to view orders and operations.
+        </p>
+        <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
+          <label className="grid gap-2 text-sm">
+            <span className="font-medium text-[var(--color-ink)]">Admin password</span>
+            <input
+              value={password}
+              type="password"
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              className="h-11 border border-[var(--color-line)] bg-[var(--color-paper)] px-3 text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)]"
+            />
+          </label>
+          <Button
+            type="submit"
+            disabled={status === 'loading'}
+            className="inline-flex h-11 items-center justify-center bg-[var(--color-primary)] px-5 text-sm font-medium text-[var(--color-paper)] transition duration-150 ease-out hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {status === 'loading' ? 'Unlocking...' : 'Unlock admin'}
+          </Button>
+          {message ? (
+            <p className={`text-sm leading-6 ${status === 'error' ? 'text-red-700' : 'text-[var(--color-muted)]'}`}>
+              {message}
+            </p>
+          ) : null}
+        </form>
+      </section>
+    </main>
+  )
+}
+
+function AdminDashboardPage({ dashboard }: { dashboard: AdminDashboard }) {
   const router = useRouter()
   const retryShipment = useServerFn(retryAdminShipment)
   const dispatchCatalogPublish = useServerFn(publishCatalog)
