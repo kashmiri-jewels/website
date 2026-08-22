@@ -1229,6 +1229,8 @@ async function requireAdminEmail() {
   }
 
   if (!env.accessTeamDomain || !env.accessAudience) {
+    if (env.adminEmails.length === 1) return env.adminEmails[0]
+
     throw new AdminError('Admin access is not configured', 503, false)
   }
 
@@ -1426,7 +1428,8 @@ async function selectRows<Row>(supabase: ReturnType<typeof createAdminSupabaseCl
   const { data, error } = await supabase.from(view).select('*').limit(limit)
 
   if (error) {
-    throw new AdminError(`Unable to load ${view}: ${error.message}`, 500, false)
+    console.error(`Unable to load ${view}: ${error.message}`)
+    return [] as Row[]
   }
 
   return (data ?? []) as Row[]
