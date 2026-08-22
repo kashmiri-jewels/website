@@ -5,6 +5,14 @@ import { RateLimitError, requireRateLimit } from '../_shared/http/rate-limit.ts'
 
 type CustomerOrderAction = 'lookup' | 'request_return'
 
+type OrderLookupCriteria = {
+  orderLookup?: string
+  phone?: {
+    normalized: string
+    lookupValues: string[]
+  }
+}
+
 type OrderItemRow = {
   id: string
   product_slug: string
@@ -91,8 +99,7 @@ Deno.serve(async (request) => {
 
     const body = await request.json().catch(() => null)
     const action = normalizeAction(body?.action)
-    const orderLookup = normalizeOrderLookup(body?.orderNumber)
-    const phone = normalizePhone(body?.phone)
+    const lookupCriteria = normalizeLookupCriteria(body)
 
     await verifyTurnstileIfConfigured(body?.turnstileToken, request)
 
@@ -101,7 +108,7 @@ Deno.serve(async (request) => {
       requiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
       { auth: { persistSession: false } },
     )
-    const order = await loadCustomerOrder(supabase, orderLookup, phone.lookupValues)
+    const order = await loadCustomerOrder(supabase, lookupCriteria)
 
     if (action === 'request_return') {
       const reason = normalizeReturnReason(body?.reason)
@@ -130,7 +137,7 @@ Deno.serve(async (request) => {
         .insert({
           order_id: order.id,
           order_number: order.order_number,
-          customer_phone: phone.normalized,
+          customer_phone: lookupCriteria.phone?.normalized ?? order.customer_phone,
           reason,
           customer_note: customerNote,
           requested_items: requestedItems,
@@ -144,7 +151,13 @@ Deno.serve(async (request) => {
         throw insertError
       }
 
-      const updatedOrder = await loadCustomerOrder(supabase, orderLookup, phone.lookupValues)
+      const updatedOrder = await loadCustomerOrder(supabase, {
+        orderLookup: order.order_number,
+        phone: {
+          normalized: order.customer_phone,
+          lookupValues: createPhoneLookupValues(order.customer_phone),
+        },
+      })
       return jsonResponse({ order: serializeCustomerOrder(updatedOrder), returnRequested: true })
     }
 
@@ -171,20 +184,31 @@ Deno.serve(async (request) => {
 
 async function loadCustomerOrder(
   supabase: SupabaseClient,
-  orderLookup: string,
-  phoneLookupValues: string[],
+  criteria: OrderLookupCriteria,
 ) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('orders')
     .select(
       'id,order_number,invoice_number,status,currency,subtotal_amount_paise,shipping_amount_paise,total_amount_paise,customer_name,customer_phone,customer_email,shipping_address,created_at,order_items(id,product_slug,variant_slug,product_code,title,size_label,quantity,unit_selling_price_paise,unit_mrp_paise,discount_amount_paise,line_total_paise,primary_image_url),payments(status,amount_paise,currency,verified_at,created_at),shipments(provider,status,provider_status,tracking_number,created_at,updated_at),order_return_requests(id,status,reason,customer_note,created_at)',
     )
-    .or(`order_number.eq.${escapePostgrestValue(orderLookup)},invoice_number.eq.${escapePostgrestValue(orderLookup)}`)
-    .in('customer_phone', phoneLookupValues)
+
+  if (criteria.orderLookup) {
+    query = query.or(
+      `order_number.eq.${escapePostgrestValue(criteria.orderLookup)},invoice_number.eq.${escapePostgrestValue(criteria.orderLookup)}`,
+    )
+  }
+
+  if (criteria.phone) {
+    query = query.in('customer_phone', criteria.phone.lookupValues)
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   if (error) throw error
-  if (!data) throw new CustomerOrderError('No order found for this order number and phone.', 404)
+  if (!data) throw new CustomerOrderError('No matching order found.', 404)
 
   return data as OrderRow
 }
@@ -262,16 +286,42 @@ function normalizeAction(value: unknown): CustomerOrderAction {
   throw new CustomerOrderError('Invalid order action.', 400)
 }
 
-function normalizeOrderLookup(value: unknown) {
-  const orderLookup = String(value ?? '').trim().toUpperCase()
-  if (
-    !/^KJ-\d{8}-[A-Z0-9]{6,8}$/.test(orderLookup) &&
-    !/^KJ\/ECOM\/\d{3,}\/\d{2}-\d{2}$/.test(orderLookup)
-  ) {
-    throw new CustomerOrderError('Enter a valid order or invoice number.', 400)
+function normalizeLookupCriteria(body: Record<string, unknown> | null): OrderLookupCriteria {
+  const rawLookup = String(body?.lookup ?? '').trim()
+  const rawOrderNumber = String(body?.orderNumber ?? '').trim()
+  const rawPhone = String(body?.phone ?? '').trim()
+  const criteria: OrderLookupCriteria = {}
+
+  if (rawOrderNumber) {
+    criteria.orderLookup = normalizeOrderLookup(rawOrderNumber)
   }
 
-  return orderLookup
+  if (rawPhone) {
+    criteria.phone = normalizePhone(rawPhone)
+  }
+
+  if (rawLookup) {
+    if (looksLikePhone(rawLookup)) {
+      criteria.phone = normalizePhone(rawLookup)
+    } else {
+      criteria.orderLookup = normalizeOrderLookup(rawLookup)
+    }
+  }
+
+  if (!criteria.orderLookup && !criteria.phone) {
+    throw new CustomerOrderError('Enter an order ID, invoice number, or phone number.', 400)
+  }
+
+  return criteria
+}
+
+function normalizeOrderLookup(value: unknown) {
+  const orderLookup = String(value ?? '').trim().toUpperCase()
+  if (/^KJ-\d{8}-[A-Z0-9]{6,8}$/.test(orderLookup) || /^KJ\/ECOM\/\d{3,}\/\d{2}-\d{2}$/.test(orderLookup)) {
+    return orderLookup
+  }
+
+  throw new CustomerOrderError('Enter a valid order or invoice number.', 400)
 }
 
 function escapePostgrestValue(value: string) {
@@ -281,30 +331,44 @@ function escapePostgrestValue(value: string) {
 function normalizePhone(value: unknown) {
   const rawPhone = String(value ?? '').trim()
   const digits = rawPhone.replace(/\D/g, '')
-  const lookupValues = new Set<string>()
 
   if (/^\+\d{10,15}$/.test(rawPhone.replace(/\s/g, ''))) {
     const normalized = rawPhone.replace(/\s/g, '')
-    lookupValues.add(normalized)
-    if (normalized.startsWith('+91') && normalized.length === 13) {
-      lookupValues.add(normalized.slice(3))
-    }
-    return { normalized, lookupValues: [...lookupValues] }
+    return { normalized, lookupValues: createPhoneLookupValues(normalized) }
   }
   if (/^\d{10}$/.test(digits)) {
     const normalized = `+91${digits}`
-    lookupValues.add(normalized)
-    lookupValues.add(digits)
-    return { normalized, lookupValues: [...lookupValues] }
+    return { normalized, lookupValues: createPhoneLookupValues(normalized) }
   }
   if (/^91\d{10}$/.test(digits)) {
     const normalized = `+${digits}`
-    lookupValues.add(normalized)
-    lookupValues.add(digits.slice(2))
-    return { normalized, lookupValues: [...lookupValues] }
+    return { normalized, lookupValues: createPhoneLookupValues(normalized) }
   }
 
   throw new CustomerOrderError('Enter the phone number used for this order.', 400)
+}
+
+function looksLikePhone(value: string) {
+  const digits = value.replace(/\D/g, '')
+  return /^\+?\d[\d\s()-]{8,}$/.test(value) && (digits.length === 10 || digits.length === 12)
+}
+
+function createPhoneLookupValues(value: string) {
+  const digits = value.replace(/\D/g, '')
+  const lookupValues = new Set<string>()
+  const normalized = digits.startsWith('91') && digits.length === 12 ? `+${digits}` : value
+
+  if (normalized) lookupValues.add(normalized)
+  if (digits.length === 10) {
+    lookupValues.add(digits)
+    lookupValues.add(`+91${digits}`)
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    lookupValues.add(digits.slice(2))
+    lookupValues.add(`+${digits}`)
+  }
+
+  return [...lookupValues]
 }
 
 function normalizeReturnReason(value: unknown) {

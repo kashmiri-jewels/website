@@ -107,8 +107,7 @@ export const Route = createFileRoute('/orders')({
 })
 
 function OrdersPage() {
-  const [orderNumber, setOrderNumber] = useState('')
-  const [phone, setPhone] = useState('')
+  const [lookup, setLookup] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
   const [order, setOrder] = useState<CustomerOrder | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -123,8 +122,7 @@ function OrdersPage() {
     try {
       const response = await invokeCustomerOrder({
         action: 'lookup',
-        orderNumber,
-        phone,
+        lookup,
         turnstileToken,
       })
       setOrder(response.order)
@@ -146,20 +144,18 @@ function OrdersPage() {
         <div className={order ? 'grid gap-8 lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)] lg:items-start' : 'mx-auto max-w-xl'}>
           <OrderLookupForm
             message={message}
-            orderNumber={orderNumber}
-            phone={phone}
+            lookup={lookup}
             status={status}
             turnstileResetSignal={turnstileResetSignal}
             turnstileTokenEnabled={Boolean(turnstileSiteKey)}
-            onOrderNumberChange={setOrderNumber}
-            onPhoneChange={setPhone}
+            onLookupChange={setLookup}
             onSubmit={submitLookup}
             onTurnstileTokenChange={setTurnstileToken}
           />
 
           {order ? (
             <section>
-              <OrderDetails order={order} orderNumber={orderNumber} phone={phone} onOrderChange={setOrder} />
+              <OrderDetails order={order} lookup={lookup} onOrderChange={setOrder} />
             </section>
           ) : null}
         </div>
@@ -170,23 +166,19 @@ function OrdersPage() {
 
 function OrderLookupForm({
   message,
-  onOrderNumberChange,
-  onPhoneChange,
+  onLookupChange,
   onSubmit,
   onTurnstileTokenChange,
-  orderNumber,
-  phone,
+  lookup,
   status,
   turnstileResetSignal,
   turnstileTokenEnabled,
 }: {
   message: string
-  onOrderNumberChange: (value: string) => void
-  onPhoneChange: (value: string) => void
+  onLookupChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onTurnstileTokenChange: (token: string) => void
-  orderNumber: string
-  phone: string
+  lookup: string
   status: 'idle' | 'loading' | 'success' | 'error'
   turnstileResetSignal: number
   turnstileTokenEnabled: boolean
@@ -198,22 +190,16 @@ function OrderLookupForm({
         Track your order
       </h1>
       <p className="mt-4 text-sm leading-6 text-[var(--color-muted)]">
-        Enter the order or invoice number and phone used at checkout to view shipment status or request a return.
+        Enter your order number, invoice number, or phone number to view shipment status or request a return.
       </p>
 
       <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
         <FormField
-          label="Order number"
-          value={orderNumber}
-          placeholder="KJ-20260619-ABC123 or KJ/ECOM/001/26-27"
-          onChange={(value) => onOrderNumberChange(value.toUpperCase())}
-        />
-        <FormField
-          label="Phone number"
-          value={phone}
-          inputMode="tel"
-          placeholder="10 digit mobile number"
-          onChange={onPhoneChange}
+          label="Order ID or phone"
+          value={lookup}
+          inputMode="text"
+          placeholder="KJ-20260823-ABC123 or 10 digit mobile number"
+          onChange={onLookupChange}
         />
         {turnstileTokenEnabled ? (
           <TurnstileWidget
@@ -243,15 +229,13 @@ function OrderLookupForm({
 }
 
 function OrderDetails({
+  lookup,
   onOrderChange,
   order,
-  orderNumber,
-  phone,
 }: {
+  lookup: string
   onOrderChange: (order: CustomerOrder) => void
   order: CustomerOrder
-  orderNumber: string
-  phone: string
 }) {
   const [reason, setReason] = useState(returnReasons[0].value)
   const [note, setNote] = useState('')
@@ -272,8 +256,7 @@ function OrderDetails({
     try {
       const response = await invokeCustomerOrder({
         action: 'request_return',
-        orderNumber: orderNumber || order.orderNumber,
-        phone,
+        lookup: lookup || order.orderNumber,
         reason,
         note,
         turnstileToken: returnTurnstileToken,
@@ -459,7 +442,7 @@ function FormField({
   placeholder,
   value,
 }: {
-  inputMode?: 'tel'
+  inputMode?: 'text' | 'tel'
   label: string
   onChange: (value: string) => void
   placeholder: string
