@@ -126,6 +126,27 @@ export type CancelOrderResult = {
   shipmentStatus: string | null
 }
 
+export type AdminShipmentStatus =
+  | 'pending'
+  | 'created'
+  | 'in_transit'
+  | 'delivered'
+  | 'failed'
+  | 'cancelled'
+
+export type UpdateShipmentStatusResult = {
+  adminEmail: string
+  orderNumber: string
+  shipmentStatus: AdminShipmentStatus
+}
+
+export type CompleteOrderResult = {
+  adminEmail: string
+  orderNumber: string
+  status: 'delivered'
+  shipmentStatus: 'delivered'
+}
+
 export type CatalogPublishEnvironment = 'qa' | 'prod'
 
 export type CatalogPublishDispatchResult = {
@@ -464,6 +485,147 @@ export async function cancelOrderFromAdmin(orderNumber: string): Promise<CancelO
   }
 }
 
+export async function updateShipmentStatusFromAdmin(
+  orderNumber: string,
+  shipmentStatus: AdminShipmentStatus,
+): Promise<UpdateShipmentStatusResult> {
+  setAdminResponseHeaders()
+
+  try {
+    requireSameOriginMutation()
+
+    const adminEmail = await requireAdminEmail()
+    const env = readAdminEnv()
+    const supabase = createAdminSupabaseClient(env)
+    const order = await loadAdminOrderForMutation(supabase, orderNumber)
+
+    if (readString(order.status) === 'cancelled') {
+      throw new AdminError('Cancelled orders cannot be updated.', 409, true)
+    }
+
+    const { error: shipmentError } = await supabase
+      .from('shipments')
+      .upsert(
+        {
+          order_id: String(order.id),
+          provider: 'manual',
+          status: shipmentStatus,
+          provider_status: `admin_${shipmentStatus}`,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'order_id' },
+      )
+
+    if (shipmentError) {
+      throw new AdminError(`Unable to update shipment status: ${shipmentError.message}`, 500, false)
+    }
+
+    const orderStatusPatch =
+      shipmentStatus === 'delivered'
+        ? 'delivered'
+        : shipmentStatus === 'in_transit'
+          ? 'shipped'
+          : shipmentStatus === 'cancelled'
+            ? 'cancelled'
+            : null
+
+    if (orderStatusPatch) {
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: orderStatusPatch, updated_at: new Date().toISOString() })
+        .eq('id', String(order.id))
+
+      if (orderError) {
+        throw new AdminError(`Shipment updated, but order status could not be updated: ${orderError.message}`, 500, false)
+      }
+    }
+
+    await supabase.from('integration_events').insert({
+      source: 'admin',
+      event_type: 'update_shipment_status',
+      order_id: String(order.id),
+      status: 'processed',
+      payload: {
+        adminEmail,
+        orderNumber: readString(order.order_number),
+        shipmentStatus,
+      },
+    })
+
+    return {
+      adminEmail,
+      orderNumber: readString(order.order_number),
+      shipmentStatus,
+    }
+  } catch (error) {
+    throw sanitizeAdminError(error, 'Unable to update shipment status')
+  }
+}
+
+export async function completeOrderFromAdmin(orderNumber: string): Promise<CompleteOrderResult> {
+  setAdminResponseHeaders()
+
+  try {
+    requireSameOriginMutation()
+
+    const adminEmail = await requireAdminEmail()
+    const env = readAdminEnv()
+    const supabase = createAdminSupabaseClient(env)
+    const order = await loadAdminOrderForMutation(supabase, orderNumber)
+
+    if (readString(order.status) === 'cancelled') {
+      throw new AdminError('Cancelled orders cannot be completed.', 409, true)
+    }
+
+    const timestamp = new Date().toISOString()
+    const { error: orderError } = await supabase
+      .from('orders')
+      .update({ status: 'delivered', updated_at: timestamp })
+      .eq('id', String(order.id))
+
+    if (orderError) {
+      throw new AdminError(`Unable to complete order: ${orderError.message}`, 500, false)
+    }
+
+    const { error: shipmentError } = await supabase
+      .from('shipments')
+      .upsert(
+        {
+          order_id: String(order.id),
+          provider: 'manual',
+          status: 'delivered',
+          provider_status: 'completed_by_admin',
+          updated_at: timestamp,
+        },
+        { onConflict: 'order_id' },
+      )
+
+    if (shipmentError) {
+      throw new AdminError(`Order completed, but shipment status could not be updated: ${shipmentError.message}`, 500, false)
+    }
+
+    await supabase.from('integration_events').insert({
+      source: 'admin',
+      event_type: 'complete_order',
+      order_id: String(order.id),
+      status: 'processed',
+      payload: {
+        adminEmail,
+        orderNumber: readString(order.order_number),
+      },
+    })
+
+    return {
+      adminEmail,
+      orderNumber: readString(order.order_number),
+      status: 'delivered',
+      shipmentStatus: 'delivered',
+    }
+  } catch (error) {
+    throw sanitizeAdminError(error, 'Unable to complete order')
+  }
+}
+
 export async function publishCatalogFromAdmin(
   environment: CatalogPublishEnvironment,
 ): Promise<CatalogPublishDispatchResult> {
@@ -692,6 +854,24 @@ type InvoicePdfContext = {
     bold: PDFFont
   }
   y: number
+}
+
+async function loadAdminOrderForMutation(
+  supabase: ReturnType<typeof createAdminSupabaseClient>,
+  orderLookup: string,
+) {
+  const normalizedOrderLookup = normalizeOrderLookup(orderLookup)
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id,order_number,invoice_number,status')
+    .or(createOrderLookupFilter(normalizedOrderLookup))
+    .single()
+
+  if (error || !order) {
+    throw new AdminError('Order not found', error?.code === 'PGRST116' ? 404 : 500, true)
+  }
+
+  return order
 }
 
 async function loadInvoiceData(

@@ -1,5 +1,5 @@
 import { createServerFn, useServerFn } from '@tanstack/react-start'
-import { Ban, Download, Eye, PackageCheck, X } from 'lucide-react'
+import { Ban, CheckCircle2, Download, Eye, PackageCheck, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 
@@ -10,6 +10,7 @@ import type {
   AdminOrderDetails,
   AdminOrderRow,
   AdminReturnRequestRow,
+  AdminShipmentStatus,
 } from '../../lib/admin.server'
 import {
   formatAdminDateTime,
@@ -63,6 +64,51 @@ const cancelAdminOrder = createServerFn({ method: 'POST' })
     const { cancelOrderFromAdmin } = await import('../../lib/admin.server')
     return cancelOrderFromAdmin(data.orderNumber)
   })
+
+const updateAdminShipmentStatus = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Order number and shipment status are required')
+    }
+
+    const shipmentStatus = String((data as { shipmentStatus?: unknown }).shipmentStatus ?? '')
+    if (!shipmentStatusOptions.includes(shipmentStatus as AdminShipmentStatus)) {
+      throw new Error('Invalid shipment status')
+    }
+
+    return {
+      orderNumber: String((data as { orderNumber?: unknown }).orderNumber ?? ''),
+      shipmentStatus: shipmentStatus as AdminShipmentStatus,
+    }
+  })
+  .handler(async ({ data }) => {
+    const { updateShipmentStatusFromAdmin } = await import('../../lib/admin.server')
+    return updateShipmentStatusFromAdmin(data.orderNumber, data.shipmentStatus)
+  })
+
+const completeAdminOrder = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Order number is required')
+    }
+
+    return {
+      orderNumber: String((data as { orderNumber?: unknown }).orderNumber ?? ''),
+    }
+  })
+  .handler(async ({ data }) => {
+    const { completeOrderFromAdmin } = await import('../../lib/admin.server')
+    return completeOrderFromAdmin(data.orderNumber)
+  })
+
+const shipmentStatusOptions: AdminShipmentStatus[] = [
+  'pending',
+  'created',
+  'in_transit',
+  'delivered',
+  'failed',
+  'cancelled',
+]
 
 export function AdminDataTable({
   dashboard,
@@ -166,7 +212,11 @@ function OrdersTable({ rows }: { rows: AdminOrderRow[] }) {
                   <StatusBadge value={row.payment_status || '-'} />
                 </TableCell>
                 <TableCell>
-                  <StatusBadge value={row.shipment_status || '-'} />
+                  <ShipmentStatusSelect
+                    orderNumber={row.order_number}
+                    orderStatus={row.order_status}
+                    shipmentStatus={row.shipment_status}
+                  />
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
                     {row.tracking_number || 'No tracking'}
                   </p>
@@ -179,6 +229,10 @@ function OrdersTable({ rows }: { rows: AdminOrderRow[] }) {
                       onClick={() => void handleOpenDetails(row.order_number)}
                     />
                     <InvoiceDownloadButton orderNumber={row.order_number} />
+                    <CompleteOrderButton
+                      orderNumber={row.order_number}
+                      orderStatus={row.order_status}
+                    />
                     <CancelOrderButton
                       orderNumber={row.order_number}
                       orderStatus={row.order_status}
@@ -397,7 +451,11 @@ function OrderMobileCards({ rows }: { rows: AdminOrderRow[] }) {
                   <StatusBadge value={row.payment_status || '-'} />
                 </MobileField>
                 <MobileField label="Shipment">
-                  <StatusBadge value={row.shipment_status || '-'} />
+                  <ShipmentStatusSelect
+                    orderNumber={row.order_number}
+                    orderStatus={row.order_status}
+                    shipmentStatus={row.shipment_status}
+                  />
                 </MobileField>
               </div>
               <MobileField label="Tracking">
@@ -412,6 +470,10 @@ function OrderMobileCards({ rows }: { rows: AdminOrderRow[] }) {
                   onClick={() => void handleOpenDetails(row.order_number)}
                 />
                 <InvoiceDownloadButton orderNumber={row.order_number} />
+                <CompleteOrderButton
+                  orderNumber={row.order_number}
+                  orderStatus={row.order_status}
+                />
                 <CancelOrderButton
                   orderNumber={row.order_number}
                   orderStatus={row.order_status}
@@ -600,6 +662,105 @@ function InvoiceDownloadButton({ orderNumber }: { orderNumber: string }) {
       </button>
       {status === 'error' ? (
         <p className="mt-2 max-w-36 text-xs leading-5 text-red-700">Unable to generate invoice.</p>
+      ) : null}
+    </div>
+  )
+}
+
+function ShipmentStatusSelect({
+  orderNumber,
+  orderStatus,
+  shipmentStatus,
+}: {
+  orderNumber: string
+  orderStatus: string
+  shipmentStatus: string | null
+}) {
+  const updateShipmentStatus = useServerFn(updateAdminShipmentStatus)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const value = shipmentStatusOptions.includes(shipmentStatus as AdminShipmentStatus)
+    ? (shipmentStatus as AdminShipmentStatus)
+    : 'pending'
+  const disabled = ['cancelled', 'delivered'].includes(orderStatus)
+
+  async function handleChange(nextStatus: AdminShipmentStatus) {
+    if (disabled || nextStatus === shipmentStatus) return
+    setStatus('loading')
+
+    try {
+      await updateShipmentStatus({ data: { orderNumber, shipmentStatus: nextStatus } })
+      window.location.reload()
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div>
+      <select
+        value={value}
+        disabled={disabled || status === 'loading'}
+        onChange={(event) => void handleChange(event.target.value as AdminShipmentStatus)}
+        className="h-9 min-w-32 border border-[var(--color-line)] bg-[var(--color-paper)] px-2 text-xs font-medium text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+        aria-label={`Shipment status for ${orderNumber}`}
+      >
+        {shipmentStatusOptions.map((option) => (
+          <option key={option} value={option}>
+            {formatStatusText(option)}
+          </option>
+        ))}
+      </select>
+      {status === 'loading' ? (
+        <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">Updating...</p>
+      ) : null}
+      {status === 'error' ? (
+        <p className="mt-1 max-w-40 text-xs leading-5 text-red-700">Unable to update shipment.</p>
+      ) : null}
+    </div>
+  )
+}
+
+function CompleteOrderButton({
+  orderNumber,
+  orderStatus,
+}: {
+  orderNumber: string
+  orderStatus: string
+}) {
+  const completeOrder = useServerFn(completeAdminOrder)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const canComplete = !['cancelled', 'delivered'].includes(orderStatus)
+
+  async function handleComplete() {
+    if (!canComplete) return
+    const confirmed = window.confirm(
+      `Mark order ${orderNumber} as completed successfully?`,
+    )
+    if (!confirmed) return
+
+    setStatus('loading')
+
+    try {
+      await completeOrder({ data: { orderNumber } })
+      window.location.reload()
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={handleComplete}
+        disabled={!canComplete || status === 'loading'}
+        className="inline-flex w-fit items-center gap-2 border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 transition duration-150 ease-out hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-[var(--color-line)] disabled:bg-[var(--color-paper)] disabled:text-[var(--color-muted)] disabled:opacity-70"
+      >
+        <CheckCircle2 className="size-3.5" aria-hidden="true" />
+        {status === 'loading' ? 'Completing...' : 'Completed'}
+      </button>
+      {status === 'error' ? (
+        <p className="mt-2 max-w-40 text-xs leading-5 text-red-700">Unable to complete order.</p>
       ) : null}
     </div>
   )
