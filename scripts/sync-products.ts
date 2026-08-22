@@ -449,14 +449,18 @@ function normalizeGoogleSheetsCsvUrl(value: string) {
 
   if (url.hostname !== 'docs.google.com' || !url.pathname.includes('/spreadsheets/d/')) return value
 
-  const sheetId = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/)?.[1]
+  const sheetId = url.pathname.match(/\/spreadsheets\/d\/e\/([^/]+)/)?.[1]
+    ?? url.pathname.match(/\/spreadsheets\/d\/([^/]+)/)?.[1]
   if (!sheetId) return value
 
   const gid = url.searchParams.get('gid') || url.hash.match(/gid=(\d+)/)?.[1] || '0'
-  const isPublishedUrl = url.pathname.includes('/pub') || url.searchParams.has('output')
+  const isPublishedUrl = url.pathname.includes('/pub') || url.pathname.includes('/spreadsheets/d/e/') || url.searchParams.has('output')
 
   if (isPublishedUrl) {
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv`
+    const publishedPath = url.pathname.includes('/spreadsheets/d/e/')
+      ? `/spreadsheets/d/e/${sheetId}/pub`
+      : `/spreadsheets/d/${sheetId}/pub`
+    return `https://docs.google.com${publishedPath}?gid=${gid}&single=true&output=csv`
   }
 
   return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
